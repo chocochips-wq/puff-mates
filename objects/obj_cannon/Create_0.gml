@@ -1,0 +1,10 @@
+player_count = 0;
+angle_dir = 0;
+rot_spd = 2;
+shoot_timer = 0;
+shoot_delay = 120;
+flash_timer = 0;
+bob_timer = 0;
+bob_height = 4;
+bob_spd = 0.05;
+bob_offset = 0;
