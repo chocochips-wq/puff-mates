@@ -1,3 +1,10 @@
+// ==========================================
+// INITIALIZE GAIB VARIABLE (Pencegahan Error)
+// ==========================================
+if (!variable_instance_exists(id, "is_dead_phase2")) {
+    is_dead_phase2 = false;
+}
+
 // =======================
 // GROUNDING CHECK
 // =======================
@@ -15,46 +22,27 @@ if(grounded) is_hanging = false;
 if(is_hanging) vsp = 0;
 
 // =======================
-// INPUT
+// INPUT (HANYA AKTIF JIKA TIDAK GAIB/MATI)
 // =======================
 var h        = 0;
 var key_jump = false;
 
-if(p_id == 0) {
-    if(!is_hanging) h = keyboard_check(ord("D")) - keyboard_check(ord("A"));
-    key_jump = keyboard_check(vk_space);
-} else {
-    if(!is_hanging) h = keyboard_check(vk_right) - keyboard_check(vk_left);
-    key_jump = keyboard_check(vk_up);
-}
-
-// =======================
-// CANNON TIMER
-// =======================
-if(cannon_exit_timer > 0) cannon_exit_timer--;
-
-// =======================
-// MASUK CANNON
-// =======================
-if(!in_cannon && cannon_exit_timer <= 0) {
-    var c = instance_nearest(x, y, obj_cannon);
-    if(c != noone && point_distance(x, y, c.x, c.y) < 40) {
-        in_cannon = true;
-        x = c.x;
-        y = c.y;
-        vsp = 0;
-        hsp = 0;
+if (!is_dead_phase2) { 
+    if(p_id == 0) {
+        if(!is_hanging) h = keyboard_check(ord("D")) - keyboard_check(ord("A"));
+        key_jump = keyboard_check(vk_space);
+    } else {
+        if(!is_hanging) h = keyboard_check(vk_right) - keyboard_check(vk_left);
+        key_jump = keyboard_check(vk_up);
     }
-}
-
-// Tambahkan pengkondisian visible sebelum exit
-if(in_cannon) {
-    visible = false; // Menghilangkan player saat berada di dalam cannon
-    exit;
+} else {
+    // Jika sedang mati di Fase 2, paksa kecepatan diam total di tempat
+    hsp = 0;
+    vsp = 0;
 }
 
 // =======================
-// CANNON HSP
+// HSP AWAL
 // =======================
 if(hsp != 0) {
     var hsp_sign = sign(hsp);
@@ -94,7 +82,7 @@ if(!is_hanging && h != 0) {
 // =======================
 // GRAVITASI + COLLISION VERTIKAL
 // =======================
-if(!is_hanging) {
+if(!is_hanging && !is_dead_phase2) { // Gravitasi hanya bekerja jika tidak gaib
     vsp += grv;
 
     var hit_v = place_meeting(x, y+vsp, obj_ground)
@@ -131,10 +119,10 @@ if(!is_hanging) {
 }
 
 // =======================
-// MOVING PLATFORM — pakai xprev_manual, dengan collision check
+// MOVING PLATFORM
 // =======================
 var plat = instance_place(x, y+1, obj_moving_platform);
-if(plat != noone) {
+if(plat != noone && !is_dead_phase2) {
     var dx  = plat.x - plat.xprev_manual;
     var psx = sign(dx);
     repeat(abs(round(dx))) {
@@ -163,7 +151,7 @@ if(key_jump && grounded && jump_hold_timer <= 0) {
 // =======================
 // ANIMASI
 // =======================
-if(!is_hanging) {
+if(!is_hanging && !is_dead_phase2) {
     var target_spr = (h != 0) ? spr_player_walk : spr_player_idle;
     if(sprite_index != target_spr) {
         sprite_index = target_spr;
@@ -173,30 +161,51 @@ if(!is_hanging) {
 if(h > 0) image_xscale =  scale;
 if(h < 0) image_xscale = -scale;
 
+
 // =======================
-// CAMERA — hanya p_id 0 yang ngitung
+// CAMERA — hanya p_id 0 
 // =======================
 if(p_id == 0) {
     var cam   = view_camera[0];
     var cam_w = camera_get_view_width(cam);
     var other_p = noone;
     with(obj_player) { if(p_id == 1) other_p = id; }
-    var mid_x    = (other_p != noone) ? (x + other_p.x) / 2 : x;
+    
+    var mid_x = x;
+    var mid_y = y;
+    
+    // Ambil status gaib diri sendiri dan teman dengan pengaman agar tidak crash
+    var am_i_dead = false;
+    if (variable_instance_exists(id, "is_dead_phase2") && is_dead_phase2) am_i_dead = true;
+    
+    var is_other_dead = false;
+    if (other_p != noone && variable_instance_exists(other_p, "is_dead_phase2") && other_p.is_dead_phase2) is_other_dead = true;
+
+    // Kalkulasi posisi kamera berdasarkan siapa yang hidup di arena
+    if (other_p != noone && !is_other_dead && !am_i_dead) {
+        mid_x = (x + other_p.x) / 2;
+    } else if (other_p != noone && is_other_dead) {
+        mid_x = x;
+    } else if (am_i_dead && other_p != noone) {
+        mid_x = other_p.x;
+    }
+
     var target_x = clamp(mid_x - cam_w/2, 0, room_width - cam_w);
     var target_y = cam_y_fixed;
+    
     if (room_height > 1000) {
         var cam_h = camera_get_view_height(cam);
-        var mid_y = (other_p != noone) ? (y + other_p.y) / 2 : y;
+        if (other_p != noone && !is_other_dead && !am_i_dead) mid_y = (y + other_p.y) / 2;
+        else if (other_p != noone && is_other_dead) mid_y = y;
+        else if (am_i_dead && other_p != noone) mid_y = other_p.y;
+        
         target_y = lerp(camera_get_view_y(cam), clamp(mid_y - cam_h/2, 0, room_height - cam_h), 0.1);
     }
-    camera_set_view_pos(cam,
-        lerp(camera_get_view_x(cam), target_x, 0.1),
-        target_y
-    );
+    camera_set_view_pos(cam, lerp(camera_get_view_x(cam), target_x, 0.1), target_y);
 }
 
 // =======================
-// DEATHTRAP COLLISION → RESPAWN
+// DEATHTRAP COLLISION → SINKRONISASI JEDA
 // =======================
 var hit_laser = false;
 with(obj_laser) {
@@ -210,19 +219,40 @@ with(obj_laser) {
     if(in_x && in_y && !prot) hit_laser = true;
 }
 
-if(y > room_height 
+if(!is_dead_phase2 && (y > room_height 
 || place_meeting(x, y, obj_spike) 
 || place_meeting(x, y, obj_spike_retract) 
 || place_meeting(x, y, obj_stalactite) 
 || place_meeting(x, y, obj_lava)
-|| hit_laser) {
+|| hit_laser)) {
+    
     if (place_meeting(x, y, obj_lava)) {
         audio_play_sound(sound_lava_hit, 1, false);
     }
-    scr_respawn();
+    
+    var boss_inst = instance_find(obj_fortress_boss, 0);
+    // Jika terkena perangkap di arena Bos Fase 2, aktifkan mode gaib adil individu
+    if (boss_inst != noone && boss_inst.phase == 2) {
+        if (p_id == 0) boss_inst.p1_respawn_timer = boss_inst.respawn_delay_time;
+        if (p_id == 1) boss_inst.p2_respawn_timer = boss_inst.respawn_delay_time;
+        
+        is_dead_phase2 = true;
+        image_alpha = 0;
+    } 
+    // Jika terkena di Fase 1 Bos, reset hitung mundur ke 0
+    else if (boss_inst != noone && boss_inst.phase == 1) {
+        boss_inst.phase1_timer = 0;
+        scr_respawn();
+    } 
+    // Jika berada di Level 1-4 atau Room lain, respawn normal bawaan game kamu
+    else {
+        scr_respawn();
+    }
 }
 
 // =======================
-// RESET ALPHA
+// RESET ALPHA EFFECT
 // =======================
-image_alpha = lerp(image_alpha, 1, 0.1);
+if (!is_dead_phase2) {
+    image_alpha = lerp(image_alpha, 1, 0.1);
+}

@@ -3,6 +3,15 @@ hsp        = 0;
 vsp        = 0;
 life_timer = 300;
 
-trail_x    = array_create(8, 0);
-trail_y    = array_create(8, 0);
-trail_idx  = 0;
+// Sistem State Ambil & Lempar
+status  = 0; // 0 = Jatuh, 1 = Di Tanah, 2 = Dipegang, 3 = Dilempar Balik
+carrier = noone;
+
+// Setup Efek Ekor Asap
+trail_x   = array_create(8, 0);
+trail_y   = array_create(8, 0);
+trail_idx = 0;
+
+// Pastikan variabel internal GameMaker aman
+image_angle = 270;
+depth = -10000;

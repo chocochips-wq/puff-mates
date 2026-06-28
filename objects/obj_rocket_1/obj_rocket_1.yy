@@ -31,7 +31,10 @@
   "resourceType":"GMObject",
   "resourceVersion":"2.0",
   "solid":false,
-  "spriteId":null,
+  "spriteId":{
+    "name":"spr_rocket_mask",
+    "path":"sprites/spr_rocket_mask/spr_rocket_mask.yy",
+  },
   "spriteMaskId":null,
   "visible":true,
 }

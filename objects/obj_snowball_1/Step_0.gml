@@ -5,230 +5,183 @@ if (intercept_timer > 0) {
     intercept_timer--;
 }
 
+// ===================================================================
+// PENGAMAN VARIABEL AWAL
+// ===================================================================
+if (!variable_instance_exists(id, "bullet_type")) {
+    bullet_type = "normal";
+}
+
 // ==========================================
 // COLLISION SEBELUM GERAK
 // ==========================================
-
-// Kalau masih milik boss (belum diintercept) → bisa kena player
 if (!owned_by_player) {
-
-    // --- OPSI 2: UMBRELLA REFLECT ---
-    // Cek apakah snowball mengenai umbrella yang sedang dipegang player
+    // --- OPSI 2: UMBRELLA REFLECT (PAPAN KAYU TAMENG) ---
     var hit_umb = instance_place(x, y, obj_umbrella);
+    
     if (hit_umb != noone && hit_umb.holder != noone && intercept_timer <= 0) {
         var holder = hit_umb.holder;
-        // Cek arah: umbrella harus menghadap ke arah datangnya snowball
-        // (umbrella melindungi dari kanan jika player menghadap ke kanan, dst)
-        // Kita sederhanakan: jika snowball datang dari atas (boss di atas), selalu reflect
-        // karena umbrella di-hold di atas kepala player (offset_y = -25)
-        owned_by_player = true;
-        owner_id        = holder;
-        intercept_timer = 20; // 20 frame cooldown
-
-        // Balikkan arah ke boss
-        var boss = instance_find(obj_fortress_boss, 0);
-        if (boss != noone) {
-            // Cari turret mana yang belum hancur untuk dijadikan target
-            var target_x = boss.x;
-            var target_y = boss.y;
-
-            if (!boss.top_destroyed) {
-                target_x = boss.top_turret_x;
-                target_y = boss.turret_y;
-            } else if (!boss.bottom_destroyed) {
-                target_x = boss.bottom_turret_x;
-                target_y = boss.turret_y;
+        var reflect_ok = false;
+        if (instance_exists(holder)) {
+            var holder_facing = sign(holder.image_xscale);
+            if (holder_facing == 0) holder_facing = 1;
+            var incoming_dir = sign(hsp);
+            var falling_from_above = (vsp > 0 && abs(vsp) >= abs(hsp));
+            
+            if (incoming_dir == holder_facing || falling_from_above) {
+                reflect_ok = true;
             }
-
-            var ang = point_direction(x, y, target_x, target_y);
-            hsp = lengthdir_x(throw_speed, ang);
-            vsp = lengthdir_y(throw_speed, ang);
-            use_gravity = false; // Projectile lurus saat dilempar balik
-        } else {
-            // Kalau boss sudah tidak ada, hancurkan saja
-            instance_destroy();
-            exit;
         }
-        // Ubah warna jadi biru untuk tanda sudah jadi milik player
-        proj_color_r = 100;
-        proj_color_g = 180;
-        proj_color_b = 255;
-        exit;
-    }
 
-    // --- OPSI 1: INTERCEPT AKTIF (player berlari ke snowball) ---
-    // Cek apakah ada player yang menyentuh snowball ini
-    if (intercept_timer <= 0) {
-        var hit_player = instance_place(x, y, obj_player);
-        if (hit_player != noone) {
-            // Player bisa intercept hanya jika sedang jatuh / bergerak
-            // (bukan diam di tanah — trade-off: harus berani dekat proyektil)
-            owned_by_player = true;
-            owner_id        = hit_player;
-            intercept_timer = 20;
-
-            // Lempar langsung ke boss / turret
+        if (reflect_ok) {
             var boss = instance_find(obj_fortress_boss, 0);
             if (boss != noone) {
-                var target_x = boss.x;
-                var target_y = boss.y;
-
-                if (!boss.top_destroyed) {
-                    target_x = boss.top_turret_x;
-                    target_y = boss.turret_y;
-                } else if (!boss.bottom_destroyed) {
-                    target_x = boss.bottom_turret_x;
-                    target_y = boss.turret_y;
+                // -----------------------------------------------------------
+                // BALANCING FASE 3: BOLA SALJU BIASA LANGSUNG HANCUR (BOS KEBAL)
+                // -----------------------------------------------------------
+                if (boss.phase == 3) {
+                    instance_destroy(); 
+                    exit;
+                } 
+                // JIKA FASE 1 atau 2: Ikuti urutan target turret bawaan asli
+                else {
+                    owned_by_player = true; owner_id = holder; intercept_timer = 20;
+                    var target_x = boss.x; var target_y = boss.y;
+                    if (!boss.top_destroyed) { target_x = boss.top_turret_x; target_y = boss.turret_y; }
+                    else if (!boss.bottom_destroyed) { target_x = boss.bottom_turret_x; target_y = boss.turret_y; }
+                    
+                    var ang = point_direction(x, y, target_x, target_y);
+                    hsp = lengthdir_x(throw_speed, ang); vsp = lengthdir_y(throw_speed, ang); use_gravity = false;
+                    proj_color_r = 100; proj_color_g = 180; proj_color_b = 255;
                 }
-
-                var ang = point_direction(x, y, target_x, target_y);
-                hsp = lengthdir_x(throw_speed, ang);
-                vsp = lengthdir_y(throw_speed, ang);
-                use_gravity = false;
-            } else {
-                instance_destroy();
                 exit;
-            }
-
-            proj_color_r = 100;
-            proj_color_g = 180;
-            proj_color_b = 255;
-            exit;
-        }
-
-        // Kalau tidak kena umbrella & tidak diintercept → kena player = respawn
-        if (collision_line(x, y, x + hsp, y + vsp, obj_player, false, true) != noone) {
-            room_restart();
-            exit;
+            } else { instance_destroy(); exit; }
         }
     }
 
-} else {
-    // ==========================================
-    // SNOWBALL SUDAH MILIK PLAYER → CARI BOSS
-    // ==========================================
+    // --- OPSI 1: INTERCEPT AKTIF & DETEKSI HIT (BADAN PLAYER NYENTUH) ---
+    if (intercept_timer <= 0) {
+        var hit_player = instance_place(x, y, obj_player);
+        if (hit_player != noone && variable_instance_exists(hit_player, "is_dead_phase2") && !hit_player.is_dead_phase2) {
+            owned_by_player = true; owner_id = hit_player; intercept_timer = 20;
+            var boss = instance_find(obj_fortress_boss, 0);
+            if (boss != noone) {
+                var target_x = boss.x; var target_y = boss.y;
+                if (boss.phase == 3) {
+                    target_x = boss.x; target_y = boss.y + 160;
+                } else {
+                    if (!boss.top_destroyed) { target_x = boss.top_turret_x; target_y = boss.turret_y; }
+                    else if (!boss.bottom_destroyed) { target_x = boss.bottom_turret_x; target_y = boss.turret_y; }
+                }
+                var ang = point_direction(x, y, target_x, target_y);
+                hsp = lengthdir_x(throw_speed, ang); vsp = lengthdir_y(throw_speed, ang); use_gravity = false;
+            } else { instance_destroy(); exit; }
+            proj_color_r = 100; proj_color_g = 180; proj_color_b = 255; exit;
+        }
 
-    // Kalau kena turret/boss → damage
+        // DETEKSI PELURU MELUKAI PLAYER (COLLISION LINE)
+        var line_player = collision_line(x, y, x + hsp, y + vsp, obj_player, false, true);
+        if (line_player != noone && variable_instance_exists(line_player, "is_dead_phase2") && !line_player.is_dead_phase2) {
+            var boss_inst = instance_find(obj_fortress_boss, 0);
+            if (boss_inst != noone) {
+                if (boss_inst.phase == 2 || boss_inst.phase == 3) {
+                    if (line_player.p_id == 0) boss_inst.p1_respawn_timer = boss_inst.respawn_delay_time;
+                    if (line_player.p_id == 1) boss_inst.p2_respawn_timer = boss_inst.respawn_delay_time;
+                    
+                    line_player.is_dead_phase2 = true;
+                    line_player.image_alpha = 0;
+                } else if (boss_inst.phase == 1) {
+                    boss_inst.phase1_timer = 0;
+                    with(line_player) { scr_respawn(); }
+                }
+            } else {
+                with(line_player) { scr_respawn(); }
+            }
+            instance_destroy(); exit;
+        }
+    }
+} else {
+    // ===================================================================
+    // SNOWBALL MILIK PLAYER (SUDAH DIPANTUL BALIK MENYERANG BOS)
+    // ===================================================================
     var boss = instance_find(obj_fortress_boss, 0);
     if (boss != noone) {
-
-        // --- Cek kena TURRET KANAN ---
-        if (!boss.top_destroyed) {
-            var dist_top = point_distance(x, y, boss.top_turret_x, boss.turret_y);
-            if (dist_top < 50) {
-                boss.core_top_hp--;
-                boss.hit_flash = 10;
-                audio_play_sound(sound_lompat, 1, false);
-
-                if (boss.core_top_hp <= 0) {
-                    boss.top_destroyed = true;
-                    boss.hp -= 3;
+        
+        // JIKA DI FASE 3: Deteksi hantaman peluru ke Core Tengah Bawah Perut
+        if (boss.phase == 3) {
+            var dist_core = point_distance(x, y, boss.x, boss.y + 160); 
+            if (dist_core < 85) { 
+                if (variable_instance_exists(boss, "core_main_hp")) {
+                    boss.core_main_hp--; // Mengurangi nyawa pelan jika player memakai trik intercept badan
+                    boss.hit_flash = 20; 
+                    audio_play_sound(sound_lompat, 1, false);
+                    
+                    boss.x += irandom_range(-4, 4);
+                    boss.y += irandom_range(-4, 4);
                 }
-                instance_destroy();
-                exit;
+                instance_destroy(); exit;
             }
-        }
-
-        // --- Cek kena TURRET KIRI ---
-        if (!boss.bottom_destroyed) {
-            var dist_bot = point_distance(x, y, boss.bottom_turret_x, boss.turret_y);
-            if (dist_bot < 50) {
-                boss.core_bottom_hp--;
-                boss.hit_flash = 10;
-                audio_play_sound(sound_lompat, 1, false);
-
-                if (boss.core_bottom_hp <= 0) {
-                    boss.bottom_destroyed = true;
-                    boss.hp -= 3;
+        } 
+        // JIKA FASE 1 ATAU 2: Gunakan hit turret bawaan asli proyekmu
+        else {
+            if (!boss.top_destroyed) {
+                var dist_top = point_distance(x, y, boss.top_turret_x, boss.turret_y);
+                if (dist_top < 50) {
+                    boss.core_top_hp--; boss.hit_flash = 10; audio_play_sound(sound_lompat, 1, false);
+                    if (boss.core_top_hp <= 0) { boss.top_destroyed = true; boss.hp -= 3; }
+                    instance_destroy(); exit;
                 }
-                instance_destroy();
-                exit;
             }
-        }
-
-        // --- Cek kena INTI UTAMA (setelah dua turret hancur) ---
-        if (boss.top_destroyed && boss.bottom_destroyed) {
-            var dist_core = point_distance(x, y, boss.x, boss.y);
-            if (dist_core < 60) {
-                boss.core_main_hp--;
-                boss.hit_flash = 15;
-                audio_play_sound(sound_lompat, 1, false);
-
-                if (boss.core_main_hp <= 0) {
-                    boss.hp = 0;
+            if (!boss.bottom_destroyed) {
+                var dist_bot = point_distance(x, y, boss.bottom_turret_x, boss.turret_y);
+                if (dist_bot < 50) {
+                    boss.core_bottom_hp--; boss.hit_flash = 10; audio_play_sound(sound_lompat, 1, false);
+                    if (boss.core_bottom_hp <= 0) { boss.bottom_destroyed = true; boss.hp -= 3; }
+                    instance_destroy(); exit;
                 }
-                instance_destroy();
-                exit;
             }
         }
     }
-
-    // Snowball reflected tidak boleh kena player sendiri selama cooldown
     if (intercept_timer <= 0) {
-        if (collision_line(x, y, x + hsp, y + vsp, obj_player, false, true) != noone) {
-            // Jika tidak kena boss tapi kena player, hancurkan saja (jangan restart)
-            instance_destroy();
-            exit;
+        if (collision_line(x, y, x + hsp, y + vsp, obj_player, false, true) != noone) { instance_destroy(); exit; }
+    }
+}
+
+// COLLISION DENGAN GROUND & WALL
+if (collision_line(x, y, x + hsp, y + vsp, obj_ground, false, true) != noone ||
+    collision_line(x, y, x + hsp, y + vsp, obj_wall, false, true) != noone) {
+    instance_destroy(); exit;
+}
+
+// ===================================================================
+// PENGAMAN PERGERAKAN BERDASARKAN TIPE PELURU FASE 3
+// ===================================================================
+if (bullet_type == "phase3_ring_hold") {
+    hsp = 0;
+    vsp = 0;
+} 
+else if (bullet_type == "phase3_chaos") {
+    // Biarkan kalkulasi kecepatan bebas bekerja murni tanpa pengaruh gravitasi
+} 
+else if (bullet_type == "phase3_split_ready") {
+    if (variable_instance_exists(id, "split_timer")) {
+        split_timer--;
+        if (split_timer <= 0) {
+            bullet_type = "phase3_chaos"; 
+            var random_spl_angle = irandom_range(0, 359);
+            var random_spd = random_range(2.5, 5.0);
+            
+            hsp = lengthdir_x(random_spd, random_spl_angle);
+            vsp = lengthdir_y(random_spd, random_spl_angle);
+            
+            proj_color_r = 255; proj_color_g = 100; proj_color_b = 100; 
         }
     }
 }
-
-// ==========================================
-// COLLISION DENGAN GROUND & WALL (berlaku untuk semua)
-// ==========================================
-if (collision_line(x, y, x + hsp, y + vsp, obj_ground, false, true) != noone) {
-    instance_destroy();
-    exit;
+else {
+    if (use_gravity) vsp += grv;
 }
 
-if (collision_line(x, y, x + hsp, y + vsp, obj_wall, false, true) != noone) {
-    instance_destroy();
-    exit;
-}
-
-// ==========================================
-// MOVEMENT
-// ==========================================
-if (use_gravity) {
-    vsp += grv;
-}
-
-x += hsp;
-y += vsp;
-
-// ==========================================
-// ROTATION EFFECT
-// ==========================================
+// Update posisi koordinat akhir game
+x += hsp; y += vsp;
 proj_angle += 8;
-
-// ==========================================
-// SPREAD EFFECT
-// ==========================================
-if (spread_timer < 30) {
-    spread_timer++;
-    spread_amount = (spread_timer / 30) * max_spread_distance;
-
-    if (max_spread_distance > 0) {
-        var spread_direction = (id mod 3) - 1;
-        var spread_force = sin(spread_timer / 30 * pi) * 2;
-        hsp += spread_force * spread_direction;
-    }
-}
-
-// ==========================================
-// LIFETIME
-// ==========================================
-lifetime--;
-life = lifetime;
-
-if (lifetime <= 0) {
-    instance_destroy();
-    exit;
-}
-
-// ==========================================
-// OUT OF BOUNDS
-// ==========================================
-if (y > room_height + 50 || x < -50 || x > room_width + 50 || y < -50) {
-    instance_destroy();
-}

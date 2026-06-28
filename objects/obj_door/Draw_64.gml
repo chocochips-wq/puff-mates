@@ -1,7 +1,18 @@
+/// @description Render UI Level Selesai - Sentralisasi Fix
+
 if (global.level_complete) {
     var gw = display_get_gui_width();
     var gh = display_get_gui_height();
     
+    // ⚡ FIX UTAMA: Paksa target tujuan lerp SELALU berada di tengah layar GUI (Lebar GUI / 2)
+    var txt_target_x = gw / 2;
+    
+    // Jaring pengaman: Jika txt_x belum ada atau baru mulai transisi, spawn dari luar layar kiri dulu
+    if (!variable_instance_exists(id, "txt_x")) {
+        txt_x = -200; 
+    }
+    
+    // Gerakan animasi geser masuk yang halus menuju titik tengah monitor
     txt_x = lerp(txt_x, txt_target_x, 0.08);
     
     draw_set_font(fnt_title);
@@ -25,6 +36,7 @@ if (global.level_complete) {
     draw_set_colour(c_yellow);
     draw_text(txt_x, gh/2, "Level Selesai!");
     
+    // Reset standard drawing state GameMaker agar UI lain tidak ikut melenceng
     draw_set_halign(fa_left);
     draw_set_valign(fa_top);
 }

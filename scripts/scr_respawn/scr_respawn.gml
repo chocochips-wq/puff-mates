@@ -3,8 +3,6 @@ function scr_respawn() {
         x = spawn_x; y = spawn_y;
         vsp = 0; hsp = 0;
         is_hanging = false;
-        in_cannon = false;
-        cannon_exit_timer = 0;
         image_alpha = 0.5;
     }
     with(obj_key) {

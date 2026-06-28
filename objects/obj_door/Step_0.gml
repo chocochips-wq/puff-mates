@@ -96,31 +96,36 @@ if (opened && !anim_done) {
     }
 }
 
-// =======================
+// ==========================================
 // PLAYER MASUK KE PINTU
-// =======================
+// ==========================================
 if (opened && anim_done) {
 
-// JIKA PINTU MENU LOBBY (Transisi layar langsung dimulai)
-if (is_menu_door) {
-    var mgr = instance_find(obj_menu_manager, 0);
-    if (mgr != noone) {
-        // Kirim posisi pintu sebagai titik asal circle wipe
-        mgr.circle_origin_x = x + sprite_width / 2;
-        mgr.circle_origin_y = y + sprite_height / 2;
-        mgr.fade_target = 1.0;
-        mgr.fade_room = target_room;
-    } else {
-        room_goto(target_room);
+    // JIKA PINTU MENU LOBBY (Transisi layar langsung dimulai)
+    if (is_menu_door) {
+        var mgr = instance_find(obj_menu_manager, 0);
+        if (mgr != noone) {
+            mgr.circle_origin_x = x + sprite_width / 2;
+            mgr.circle_origin_y = y + sprite_height / 2;
+            mgr.fade_target = 1.0;
+            mgr.fade_room = target_room;
+        } else {
+            room_goto(target_room);
+        }
+        exit;
     }
-    exit;
-}
 
-    // PLAYER NORMAL (untuk level biasa - sembunyikan player saat masuk)
+// PLAYER NORMAL (untuk level biasa - sembunyikan player saat masuk)
     with (obj_player) {
         if (place_meeting(x, y, other) && visible) {
             visible = false;
             other.players_entered++;
+            
+            // ⚡ FIX UTAMA TASK 2: Jika player sedang membawa payung, hancurkan payungnya
+            // (Sesuaikan "obj_umbrella" dengan nama asli objek payung di project-mu)
+            if (instance_exists(obj_umbrella)) {
+                instance_destroy(obj_umbrella);
+            }
         }
     }
 
@@ -130,6 +135,11 @@ if (is_menu_door) {
             global.level_complete = true;
             global.level_timer = 180;
             txt_x = -300;
+
+            // ⚡ FIX UTAMA TASK 4: Matikan paksa sfx lompat secara spesifik agar tidak bocor
+            if (audio_is_playing(sound_lompat)) {
+                audio_stop_sound(sound_lompat);
+            }
 
             audio_stop_all();
             audio_play_sound(sound_level_clear, 1, false);
@@ -150,11 +160,17 @@ if (is_menu_door) {
     }
 }
 
-// =======================
-// PINDAH ROOM (hanya untuk level biasa)
-// =======================
+// ==========================================
+// PINDAH ROOM & PEREDAM LEAK AUDIO
+// ==========================================
 if (global.level_complete) {
     global.level_timer--;
+
+    // ⚡ PROTEKSI TAMBAHAN: Selama timer berjalan, paksa matikan suara lompat 
+    // jika objek player masih mencoba memicunya di background
+    if (audio_is_playing(sound_lompat)) {
+        audio_stop_sound(sound_lompat);
+    }
 
     if (global.level_timer <= 0) {
         global.level_complete = false;

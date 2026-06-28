@@ -28,9 +28,6 @@ camera_set_view_pos(cam, camera_get_view_x(cam), cam_y_fixed);
 
 is_hanging = false;
 
-in_cannon         = false;
-cannon_exit_timer = 0;
-
 jump_hold_timer = 0;
 jump_delay      = 10;
 
