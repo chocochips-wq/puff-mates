@@ -104,33 +104,32 @@ if (status == 0) {
     x += hsp;
     y += vsp;
 
-    if (place_meeting(x, y, obj_player)) {
-        var player_hit = instance_place(x, y, obj_player);
-        if (player_hit != noone) {
-            var boss_inst = instance_find(obj_fortress_boss, 0);
-            if (boss_inst != noone && boss_inst.phase == 2) {
+    // AMAN: Deteksi tabrakan roket hanya dieksekusi jika player TIDAK sedang kebal/kedip!
+    var player_hit = instance_place(x, y, obj_player);
+    if (player_hit != noone && (!variable_instance_exists(player_hit, "invincible_timer") || player_hit.invincible_timer <= 0)) {
+        var boss_inst = instance_find(obj_fortress_boss, 0);
+        if (boss_inst != noone && boss_inst.phase == 2) {
+            if (variable_instance_exists(player_hit, "is_dead_phase2") && !player_hit.is_dead_phase2) {
+                if (player_hit.p_id == 0) boss_inst.p1_respawn_timer = boss_inst.respawn_delay_time;
+                if (player_hit.p_id == 1) boss_inst.p2_respawn_timer = boss_inst.respawn_delay_time;
+                
+                player_hit.is_dead_phase2 = true;
+                player_hit.image_alpha = 0;
+            }
+        } else {
+            if (boss_inst != noone && boss_inst.phase == 3) {
                 if (variable_instance_exists(player_hit, "is_dead_phase2") && !player_hit.is_dead_phase2) {
                     if (player_hit.p_id == 0) boss_inst.p1_respawn_timer = boss_inst.respawn_delay_time;
                     if (player_hit.p_id == 1) boss_inst.p2_respawn_timer = boss_inst.respawn_delay_time;
-                    
                     player_hit.is_dead_phase2 = true;
                     player_hit.image_alpha = 0;
                 }
             } else {
-                if (boss_inst != noone && boss_inst.phase == 3) {
-                    if (variable_instance_exists(player_hit, "is_dead_phase2") && !player_hit.is_dead_phase2) {
-                        if (player_hit.p_id == 0) boss_inst.p1_respawn_timer = boss_inst.respawn_delay_time;
-                        if (player_hit.p_id == 1) boss_inst.p2_respawn_timer = boss_inst.respawn_delay_time;
-                        player_hit.is_dead_phase2 = true;
-                        player_hit.image_alpha = 0;
-                    }
-                } else {
-                    with(player_hit) { scr_respawn(); }
-                }
+                with(player_hit) { scr_respawn(); }
             }
-            instance_destroy();
-            exit;
         }
+        instance_destroy();
+        exit;
     }
 
     if (place_meeting(x, y + vsp, obj_ground)) {
@@ -147,21 +146,20 @@ if (status == 0) {
 // STATUS 1: DIAM DI TANAH MENUNGGU DIAMBIL PLAYER
 // ==========================================
 else if (status == 1) {
-    if (place_meeting(x, y, obj_player)) {
-        var player_near = instance_place(x, y, obj_player);
-        if (player_near != noone && variable_instance_exists(player_near, "is_dead_phase2") && !player_near.is_dead_phase2) {
-            
-            var already_holding = false;
-            with (obj_rocket_1) {
-                if (status == 2 && carrier == player_near) {
-                    already_holding = true;
-                }
+    var player_near = instance_place(x, y, obj_player);
+    // Player kebal kedip-kedip tetep boleh ngambil roket di tanah jirr!
+    if (player_near != noone && variable_instance_exists(player_near, "is_dead_phase2") && !player_near.is_dead_phase2) {
+        
+        var already_holding = false;
+        with (obj_rocket_1) {
+            if (status == 2 && carrier == player_near) {
+                already_holding = true;
             }
-            
-            if (!already_holding) {
-                status = 2;
-                carrier = player_near;
-            }
+        }
+        
+        if (!already_holding) {
+            status = 2;
+            carrier = player_near;
         }
     }
 }

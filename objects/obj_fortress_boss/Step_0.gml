@@ -34,6 +34,22 @@ if (core_main_hp <= 0) {
         death_timer      = 180;
         cam_shake_amount = 45; // Hantaman gempa awal sangat brutal!
 
+        // FIX SAKTI: Instant Revive semua player pas boss mati biar ga ada yang ketinggalan kereta!
+        p1_respawn_timer = -1;
+        p2_respawn_timer = -1;
+        with (obj_player) {
+            if (variable_instance_exists(id, "is_dead_phase2") && is_dead_phase2) {
+                x              = spawn_x;
+                y              = spawn_y;
+                vsp            = 0;
+                hsp            = 0;
+                is_hanging     = false;
+                is_dead_phase2 = false;
+                image_alpha    = 1.0;
+                invincible_timer = 0; 
+            }
+        }
+
         var _bx = xstart;
         var _by = ystart;
         for (var _di = 0; _di < expl_max; _di++) {
@@ -76,12 +92,10 @@ if (core_main_hp <= 0) {
         }
     }
 
-    // Setiap 20 frame, jaga amunisi getaran biar gak langsung abis
     if (death_timer > 0 && death_timer mod 20 == 0) {
         cam_shake_amount = max(cam_shake_amount, 20);
     }
 
-    // Update partikel ledakan organik
     for (var _pi = 0; _pi < expl_max; _pi++) {
         if (expl_l_life[_pi] > 0) {
             expl_l_hsp[_pi] += expl_l_arc[_pi];
@@ -100,20 +114,15 @@ if (core_main_hp <= 0) {
             expl_r_life[_pi]--;
         }
     }
-if (expl_l_core_alpha > 0) expl_l_core_alpha -= 0.015;
+    if (expl_l_core_alpha > 0) expl_l_core_alpha -= 0.015;
     if (expl_r_core_alpha > 0) expl_r_core_alpha -= 0.015;
 
-    // Bodi utama bergetar korsleting
     x = xstart + irandom_range(-12, 12);
     y = ystart + irandom_range(-9, 9);
     image_blend = choose(c_white, c_red, c_orange, c_yellow);
 
     death_timer--;
-
-    // ===================================================================
-    // SUNTIKAN SHAKE BRUTAL REAL-TIME (PROPORSIONAL SAMA SISA NYAWA TIMEOUT)
-    // ===================================================================
-    cam_shake_amount = (death_timer / 180) * 45; // Mengisi bensin getaran secara konstan!
+    cam_shake_amount = (death_timer / 180) * 45;
 
     if (death_timer <= 0) {
         cam_shake_amount = 0;
@@ -165,36 +174,28 @@ if (is_enraged) enrage_flash_timer++;
 // LOGIKA TAMBAHAN: TURRET OTOMATIS AKTIF KEMBALI DI FASE 3
 // ===================================================================
 if (phase == 3 && !overload_active) {
-    // Kita gunakan alarm bawaan boss atau variabel timer baru khusus turret Fase 3.
-    // Jika belum ada variabel timer_turret_fase3 di Create Event, GameMaker otomatis aman memakai variable_instance.
     if (!variable_instance_exists(id, "turret_fase3_timer")) {
-        turret_fase3_timer = 80; // Jeda tembakan awal turret di Fase 3
+        turret_fase3_timer = 80;
     }
     
     turret_fase3_timer--;
     
-    // Target tembakan turret Fase 3 (Ikuti logika targeting yang sudah ada)
     var target_l = instance_exists(real_p1) ? real_p1 : real_p2;
     var target_r = instance_exists(real_p2) ? real_p2 : real_p1;
     
-    // Turret Kiri membidik Player Kiri
     if (instance_exists(target_l) && (variable_instance_exists(target_l, "is_dead_phase2") && !target_l.is_dead_phase2)) {
         var ta = point_direction(l_turret_x, turret_base_y, target_l.x, target_l.y);
-        top_angle = clamp(ta, 190, 350); // Sudut bidik diperluas sedikit biar lebih responsif
+        top_angle = clamp(ta, 190, 350);
     }
     
-    // Turret Kanan membidik Player Kanan
     if (instance_exists(target_r) && (variable_instance_exists(target_r, "is_dead_phase2") && !target_r.is_dead_phase2)) {
         var ba = point_direction(r_turret_x, turret_base_y, target_r.x, target_r.y);
         bottom_angle = clamp(ba, 190, 350);
     }
 
-    // Waktunya Turret Menembak!
     if (turret_fase3_timer <= 0) {
-        // Beri jeda tembakan (jika enraged, turret menembak lebih membabi buta jirr!)
         turret_fase3_timer = is_enraged ? 45 : 70; 
         
-        // Tembakan Turret Kiri
         var b_f3_left = instance_create_layer(
             l_turret_x + lengthdir_x(90, top_angle),
             turret_base_y + lengthdir_y(90, top_angle),
@@ -204,12 +205,11 @@ if (phase == 3 && !overload_active) {
             var _spd = is_enraged ? 4.5 : 3.2;
             b_f3_left.hsp         = lengthdir_x(_spd, top_angle);
             b_f3_left.vsp         = lengthdir_y(_spd, top_angle);
-            b_f3_left.bullet_type = "phase1"; // Pakai tipe phase1 biar polanya lurus terarah
+            b_f3_left.bullet_type = "phase1";
             b_f3_left.lifetime    = 280;
             b_f3_left.use_gravity = false;
         }
         
-        // Tembakan Turret Kanan
         var b_f3_right = instance_create_layer(
             r_turret_x + lengthdir_x(90, bottom_angle),
             turret_base_y + lengthdir_y(90, bottom_angle),
@@ -223,8 +223,6 @@ if (phase == 3 && !overload_active) {
             b_f3_right.lifetime    = 280;
             b_f3_right.use_gravity = false;
         }
-        
-        // Efek hentakan kecil pada kamera pas turret nembak biar makin berasa impact-nya
         cam_shake_amount = max(cam_shake_amount, 3);
     }
 }
@@ -478,12 +476,29 @@ if (phase == 3) {
 if (flash_alpha > 0) flash_alpha -= 0.08;
 
 // ===================================================================
-// CO-OP RESPAWN
+// CO-OP RESPAWN (MURNI BERBASIS KEY-SPAM RECOVERY - ANTI-STUCK)
 // ===================================================================
 if (phase == 2 || phase == 3) {
+    
+    // --- EVALUASI PLAYER 1 (SPAM SPASI) ---
     if (p1_respawn_timer > 0) {
-        p1_respawn_timer--;
-        if (p1_respawn_timer <= 0) {
+        if (keyboard_check_pressed(vk_space)) {
+            p1_respawn_timer = max(1, p1_respawn_timer - 6);
+        }
+        
+        // FIX SAKTI: Pakai other.real_p1 biar gak nyari variabel gaib!
+        if (instance_exists(real_p1) && real_p1.is_dead_phase2) {
+            real_p1.has_umbrella = false;
+            with(obj_umbrella) {
+                if (holder == other.real_p1.id) {
+                    holder = noone; // Putus hubungan kepemilikan
+                    x = xstart;     // Taruh balik ke tempat awal room
+                    y = ystart;
+                }
+            }
+        }
+        
+        if (p1_respawn_timer <= 1) {
             if (instance_exists(real_p1)) {
                 real_p1.x              = real_p1.spawn_x;
                 real_p1.y              = real_p1.spawn_y;
@@ -492,13 +507,31 @@ if (phase == 2 || phase == 3) {
                 real_p1.is_hanging     = false;
                 real_p1.is_dead_phase2 = false;
                 real_p1.image_alpha    = 0.5;
+                real_p1.invincible_timer = 240; 
             }
             p1_respawn_timer = -1;
         }
     }
+    
+    // --- EVALUASI PLAYER 2 (SPAM PANAH ATAS) ---
     if (p2_respawn_timer > 0) {
-        p2_respawn_timer--;
-        if (p2_respawn_timer <= 0) {
+        if (keyboard_check_pressed(vk_up)) {
+            p2_respawn_timer = max(1, p2_respawn_timer - 6);
+        }
+        
+        // FIX SAKTI: Pakai other.real_p2 juga di sini!
+        if (instance_exists(real_p2) && real_p2.is_dead_phase2) {
+            real_p2.has_umbrella = false;
+            with(obj_umbrella) {
+                if (holder == other.real_p2.id) {
+                    holder = noone;
+                    x = xstart;
+                    y = ystart;
+                }
+            }
+        }
+        
+        if (p2_respawn_timer <= 1) {
             if (instance_exists(real_p2)) {
                 real_p2.x              = real_p2.spawn_x;
                 real_p2.y              = real_p2.spawn_y;
@@ -507,6 +540,7 @@ if (phase == 2 || phase == 3) {
                 real_p2.is_hanging     = false;
                 real_p2.is_dead_phase2 = false;
                 real_p2.image_alpha    = 0.5;
+                real_p2.invincible_timer = 240; 
             }
             p2_respawn_timer = -1;
         }
@@ -543,8 +577,9 @@ if (phase == 2 || phase == 3) {
         with (obj_laser_fase3) { instance_destroy(); }
         with (obj_snowball_1)  { instance_destroy(); }
         with (obj_rocket_1)    { instance_destroy(); }
-        if (instance_exists(real_p1)) { real_p1.is_dead_phase2 = false; real_p1.image_alpha = 1; }
-        if (instance_exists(real_p2)) { real_p2.is_dead_phase2 = false; real_p2.image_alpha = 1; }
+        if (instance_exists(real_p1)) { real_p1.is_dead_phase2 = false; real_p1.image_alpha = 1; real_p1.invincible_timer = 0; real_p1.has_umbrella = false; }
+        if (instance_exists(real_p2)) { real_p2.is_dead_phase2 = false; real_p2.image_alpha = 1; real_p2.invincible_timer = 0; real_p2.has_umbrella = false; }
+        with(obj_umbrella) { holder = noone; x = xstart; y = ystart; }
         scr_respawn(); exit;
     }
 }
@@ -585,7 +620,6 @@ if (phase == 3) {
     shoot_timer--;
     if (fase3_timer > 0) fase3_timer--;
 
-    // CORE OVERLOAD
     if (!overload_active && core_main_hp <= 15 && core_main_hp > 0) {
         overload_active  = true;
         overload_phase   = 0;
@@ -648,7 +682,6 @@ if (phase == 3) {
     }
 
     if (!overload_active) {
-        // SERANGAN 1: Chaos Circle
         if (fase3_mode == 1) {
             if (shoot_timer <= 0) {
                 sweep_angle += (7 * sweep_direction);
@@ -673,7 +706,6 @@ if (phase == 3) {
             }
         }
 
-        // SERANGAN 2: Laser Sweep
         else if (fase3_mode == 2) {
             if (!laser_already_spawned) {
                 var laser_inst = instance_create_layer(bx, by + 45, "Instances_1", obj_laser_fase3);
@@ -707,7 +739,6 @@ if (phase == 3) {
             }
         }
 
-        // SERANGAN 3: Fan Rhythm
         else if (fase3_mode == 3) {
             if (shoot_timer <= 0) {
                 var fan_spread = 25;
@@ -739,7 +770,6 @@ if (phase == 3) {
             }
         }
 
-        // SERANGAN 5: Spiral Hell (FIX TRANSISI ANTI-STUCK)
         else if (fase3_mode == 5) {
             if (shoot_timer <= 0) {
                 var dynamic_gap_center = 270 + (sin(fase3_timer * 0.05) * 45);
@@ -793,7 +823,6 @@ if (phase == 3) {
             }
         }
 
-        // MODE 4: GIGA ROCKET OVERHEAT
         else if (fase3_mode == 4) {
             if (fase3_timer > 40) {
                 x = xstart + irandom_range(-5, 5);

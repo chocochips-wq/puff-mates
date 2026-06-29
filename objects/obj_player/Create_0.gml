@@ -35,3 +35,7 @@ depth = 0;
 
 has_umbrella = false;
 
+// ==========================================
+// SISTEM KEBAL (I-FRAMES) SELESAI RESPAWN
+// ==========================================
+invincible_timer = 0; // Durasi kebal (dalam frame)

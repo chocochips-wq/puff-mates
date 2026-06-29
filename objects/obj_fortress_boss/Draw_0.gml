@@ -338,7 +338,7 @@ if (!boss_fully_dead) {
 
         draw_set_color(c_white); draw_rectangle(bar_x,bar_y,bar_x+bar_w,bar_y+bar_h,true);
         draw_set_halign(fa_center); draw_set_valign(fa_bottom); draw_set_font(fnt_boss_name);
-        draw_text(bar_x+bar_w/2, bar_y-4, "JUGGERNAUT");
+        draw_text(bar_x+bar_w/2, bar_y-4, "ENTDECKER");
         draw_set_font(fnt_title); draw_set_halign(fa_left); draw_set_valign(fa_top);
 
         if (is_enraged) {

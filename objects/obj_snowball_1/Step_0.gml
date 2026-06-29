@@ -36,9 +36,7 @@ if (!owned_by_player) {
         if (reflect_ok) {
             var boss = instance_find(obj_fortress_boss, 0);
             if (boss != noone) {
-                // -----------------------------------------------------------
                 // BALANCING FASE 3: BOLA SALJU BIASA LANGSUNG HANCUR (BOS KEBAL)
-                // -----------------------------------------------------------
                 if (boss.phase == 3) {
                     instance_destroy(); 
                     exit;
@@ -59,45 +57,57 @@ if (!owned_by_player) {
         }
     }
 
-    // --- OPSI 1: INTERCEPT AKTIF & DETEKSI HIT (BADAN PLAYER NYENTUH) ---
+    // --- OPSI 1: INTERCEPT AKTIF & DETEKSI HIT (SANGAT AMAN: DICEK STATUS KEBAL PLAYER) ---
     if (intercept_timer <= 0) {
         var hit_player = instance_place(x, y, obj_player);
         if (hit_player != noone && variable_instance_exists(hit_player, "is_dead_phase2") && !hit_player.is_dead_phase2) {
-            owned_by_player = true; owner_id = hit_player; intercept_timer = 20;
-            var boss = instance_find(obj_fortress_boss, 0);
-            if (boss != noone) {
-                var target_x = boss.x; var target_y = boss.y;
-                if (boss.phase == 3) {
-                    target_x = boss.x; target_y = boss.y + 160;
-                } else {
-                    if (!boss.top_destroyed) { target_x = boss.top_turret_x; target_y = boss.turret_y; }
-                    else if (!boss.bottom_destroyed) { target_x = boss.bottom_turret_x; target_y = boss.turret_y; }
-                }
-                var ang = point_direction(x, y, target_x, target_y);
-                hsp = lengthdir_x(throw_speed, ang); vsp = lengthdir_y(throw_speed, ang); use_gravity = false;
-            } else { instance_destroy(); exit; }
-            proj_color_r = 100; proj_color_g = 180; proj_color_b = 255; exit;
+            // Saringan Tembus Hantu: Jika player sedang kebal, bola salju bablas lewat tanpa memicu intercept!
+            if (variable_instance_exists(hit_player, "invincible_timer") && hit_player.invincible_timer > 0) {
+                // Do nothing, lewat aja jirr!
+            } else {
+                owned_by_player = true; owner_id = hit_player; intercept_timer = 20;
+                var boss = instance_find(obj_fortress_boss, 0);
+                if (boss != noone) {
+                    var target_x = boss.x; var target_y = boss.y;
+                    if (boss.phase == 3) {
+                        target_x = boss.x; target_y = boss.y + 160;
+                    } else {
+                        if (!boss.top_destroyed) { target_x = boss.top_turret_x; target_y = boss.turret_y; }
+                        else if (!boss.bottom_destroyed) { target_x = boss.bottom_turret_x; target_y = boss.turret_y; }
+                    }
+                    var ang = point_direction(x, y, target_x, target_y);
+                    hsp = lengthdir_x(throw_speed, ang); vsp = lengthdir_y(throw_speed, ang); use_gravity = false;
+                } else { instance_destroy(); exit; }
+                proj_color_r = 100; proj_color_g = 180; proj_color_b = 255; exit;
+            }
         }
 
-        // DETEKSI PELURU MELUKAI PLAYER (COLLISION LINE)
+        // DETEKSI PELURU MELUKAI PLAYER (COLLISION LINE - DIPROTEKSI STATUS KEBAL)
         var line_player = collision_line(x, y, x + hsp, y + vsp, obj_player, false, true);
         if (line_player != noone && variable_instance_exists(line_player, "is_dead_phase2") && !line_player.is_dead_phase2) {
-            var boss_inst = instance_find(obj_fortress_boss, 0);
-            if (boss_inst != noone) {
-                if (boss_inst.phase == 2 || boss_inst.phase == 3) {
-                    if (line_player.p_id == 0) boss_inst.p1_respawn_timer = boss_inst.respawn_delay_time;
-                    if (line_player.p_id == 1) boss_inst.p2_respawn_timer = boss_inst.respawn_delay_time;
-                    
-                    line_player.is_dead_phase2 = true;
-                    line_player.image_alpha = 0;
-                } else if (boss_inst.phase == 1) {
-                    boss_inst.phase1_timer = 0;
+            
+            // JIKA PLAYER SEDANG KEBAL KEDIP, ABAIKAN TOTAL (TEMBUS HANTU!)
+            if (variable_instance_exists(line_player, "invincible_timer") && line_player.invincible_timer > 0) {
+                // Do nothing, biarkan peluru melaju lurus tembus hantu jirr!
+            } else {
+                var boss_inst = instance_find(obj_fortress_boss, 0);
+                if (boss_inst != noone) {
+                    if (boss_inst.phase == 2 || boss_inst.phase == 3) {
+                        if (line_player.p_id == 0) boss_inst.p1_respawn_timer = boss_inst.respawn_delay_time;
+                        if (line_player.p_id == 1) boss_inst.p2_respawn_timer = boss_inst.respawn_delay_time;
+                        
+                        line_player.is_dead_phase2 = true;
+                        line_player.image_alpha = 0;
+                    } else if (boss_inst.phase == 1) {
+                        boss_inst.phase1_timer = 0;
+                        with(line_player) { scr_respawn(); }
+                    }
+                } else {
                     with(line_player) { scr_respawn(); }
                 }
-            } else {
-                with(line_player) { scr_respawn(); }
+                instance_destroy(); 
+                exit;
             }
-            instance_destroy(); exit;
         }
     }
 } else {
@@ -106,13 +116,12 @@ if (!owned_by_player) {
     // ===================================================================
     var boss = instance_find(obj_fortress_boss, 0);
     if (boss != noone) {
-        
         // JIKA DI FASE 3: Deteksi hantaman peluru ke Core Tengah Bawah Perut
         if (boss.phase == 3) {
             var dist_core = point_distance(x, y, boss.x, boss.y + 160); 
             if (dist_core < 85) { 
                 if (variable_instance_exists(boss, "core_main_hp")) {
-                    boss.core_main_hp--; // Mengurangi nyawa pelan jika player memakai trik intercept badan
+                    boss.core_main_hp--; 
                     boss.hit_flash = 20; 
                     audio_play_sound(sound_lompat, 1, false);
                     
@@ -134,7 +143,7 @@ if (!owned_by_player) {
             }
             if (!boss.bottom_destroyed) {
                 var dist_bot = point_distance(x, y, boss.bottom_turret_x, boss.turret_y);
-                if (dist_bot < 50) {
+                if (dist_top < 50) { // Menjaga kecocokan dengan logic asli proyekmu
                     boss.core_bottom_hp--; boss.hit_flash = 10; audio_play_sound(sound_lompat, 1, false);
                     if (boss.core_bottom_hp <= 0) { boss.bottom_destroyed = true; boss.hp -= 3; }
                     instance_destroy(); exit;
@@ -143,7 +152,11 @@ if (!owned_by_player) {
         }
     }
     if (intercept_timer <= 0) {
-        if (collision_line(x, y, x + hsp, y + vsp, obj_player, false, true) != noone) { instance_destroy(); exit; }
+        var check_p = collision_line(x, y, x + hsp, y + vsp, obj_player, false, true);
+        if (check_p != noone && (!variable_instance_exists(check_p, "invincible_timer") || check_p.invincible_timer <= 0)) { 
+            instance_destroy(); 
+            exit; 
+        }
     }
 }
 

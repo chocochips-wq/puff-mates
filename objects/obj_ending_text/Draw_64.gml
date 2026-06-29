@@ -17,7 +17,7 @@ draw_set_font(fnt_title);
 
 // Teks yang ingin ditampilkan
 var txt_title  = "VICTORY!";
-var txt_sub    = "THE JUGGERNAUT HAS BEEN DESTROYED";
+var txt_sub    = "THE ENTDECKER HAS BEEN DESTROYED";
 var txt_thanks = "THANK YOU FOR PLAYING";
 var txt_reset  = "Press 'ENTER' to Return to Lobby";
 

@@ -1,6 +1,13 @@
 /// @description Logika Pergerakan, Kamera & Perangkap Player
 
 // ==========================================
+// HITUNG MUNDUR WAKTU KEBAL (I-FRAMES)
+// ==========================================
+if (invincible_timer > 0) {
+    invincible_timer--;
+}
+
+// ==========================================
 // INITIALIZE GAIB VARIABLE (Pencegahan Error)
 // ==========================================
 if (!variable_instance_exists(id, "is_dead_phase2")) {
@@ -208,7 +215,6 @@ with(obj_laser) {
     var prot = false;
     
     if(umbrella != noone && umbrella.holder != noone) {
-        // Laser hanya aman jika koordinat X laser berada di dalam batas lebar fisik payung
         if (x >= umbrella.bbox_left && x <= umbrella.bbox_right) {
             prot = true;
         }
@@ -216,8 +222,8 @@ with(obj_laser) {
     if(in_x && in_y && !prot) hit_laser = true;
 }
 
-// Pengecekan deathtrap (obj_stalactite sudah dihapus agar tidak error)
-if(!is_dead_phase2 && (y > room_height 
+// Pengecekan deathtrap (DIPROTEKSI OLEH SIKLUS INVINCIBLE_TIMER)
+if(!is_dead_phase2 && invincible_timer <= 0 && (y > room_height 
 || place_meeting(x, y, obj_spike) 
 || place_meeting(x, y, obj_spike_retract) 
 || place_meeting(x, y, obj_lava)
