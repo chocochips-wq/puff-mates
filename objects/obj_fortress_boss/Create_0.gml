@@ -124,3 +124,29 @@ turret_hitbox_h = 110;
 magnet_progress    = 0;       
 laser_tether_y     = 0;       
 laser_tether_timer = 0;
+
+// CROSS-FIRE SYSTEM
+crossfire_counter  = 0;
+crossfire_cooldown = 0;
+
+// SPIRAL MODE 5
+spiral_angle      = 0;
+spiral_speed      = 3.5;
+spiral_arms       = 6;
+
+// CRACK VISUAL TURRET
+crack_seed_l = irandom(9999);
+crack_seed_r = irandom(9999);
+
+// ENRAGE SYSTEM
+is_enraged         = false;
+enrage_speed_mult  = 1.0;
+enrage_flash_timer = 0;
+
+// WARNING INDICATOR
+warning_timer  = -1;
+warning_x      = 0;
+warning_active = false;
+
+door_open_offset = 0;
+
