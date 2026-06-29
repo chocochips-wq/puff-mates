@@ -1,4 +1,5 @@
 /// @description Full Render Juggernaut + Partikel Ledakan Organik
+
 // ===================================================================
 // SOLUSI BYPASS MATRIX: GETARKAN MATRIX PROYEKSI SECARA PAKSA!
 // ===================================================================
@@ -68,7 +69,7 @@ if (!boss_fully_dead) {
         draw_set_color(c_border); draw_rectangle(p_kiri_x1 - 2, by - b_h + 6, p_kiri_x2 + 2, by + b_h - 6, false);
         draw_set_color(c_armor_mid); draw_rectangle(p_kiri_x1, by - b_h + 8, p_kiri_x2, by + b_h - 8, false);
     }
-// PINTU GERBANG (KANAN)
+    // PINTU GERBANG (KANAN)
     var p_kanan_x1 = bx + door_open_offset; var p_kanan_x2 = bx + b_w - 8 + door_open_offset;
     if (p_kanan_x1 < bx + b_w - 8) {
         draw_set_color(c_border); draw_rectangle(p_kanan_x1 - 2, by - b_h + 6, p_kanan_x2 + 2, by + b_h - 6, false);
@@ -76,38 +77,46 @@ if (!boss_fully_dead) {
     }
     if (door_open_offset <= 1) { draw_set_color(c_border); draw_line_width(bx, by - b_h + 18, bx, by + b_h - 18, 4); }
 
+   // ===================================================================
+    // LAYER 3: KOTAK TURRET (FULL SYNTAX STERIL & ANTI-PEYANG)
     // ===================================================================
-    // LAYER 3: KOTAK TURRET
-    // ===================================================================
-    var t_width = 75; var t_height = 110;
+    var t_width = 75; 
+    var t_height = 110;
+    
+    // Titik koordinat lokal untuk kalkulasi rotasi puing (Bentuk Kotak Sempurna)
     var x1_l = -t_width; var y1_l = -t_height / 2;
     var x2_l =  t_width; var y2_l =  t_height / 2;
-    var ix1_l = -t_width + 20; var iy1_l = -t_height / 2 + 20;
-    var ix2_l =  t_width - 20; var iy2_l =  t_height / 2 - 20;
 
-    // KOTAK KIRI
-    var target_l_y = (bottom_destroyed || phase == 3) ? puing_l_y : laras_y_offset;
-    var c_l_base   = (phase == 3 || bottom_destroyed) ? make_color_rgb(30, 32, 35) : c_armor_dark;
-    var c_l_panel  = (phase == 3 || bottom_destroyed) ? make_color_rgb(45, 48, 50) : c_armor_mid;
-    var angle_l    = (bottom_destroyed || phase == 3) ? puing_l_angle : 0;
+    // --- 1. KOTAK TURRET KIRI ---
+    var target_l_y = (phase == 3) ? laras_y_offset : ((bottom_destroyed) ? puing_l_y : laras_y_offset);
+    var c_l_base   = (phase == 3) ? c_armor_dark   : ((bottom_destroyed) ? make_color_rgb(30, 32, 35) : c_armor_dark);
+    var c_l_panel  = (phase == 3) ? c_armor_mid    : ((bottom_destroyed) ? make_color_rgb(45, 48, 50) : c_armor_mid);
+    
     if (jeda_fase3 > 450) target_l_y = laras_y_offset;
     if (phase == 3) draw_set_alpha(magnet_progress);
 
-    var cos_l = dcos(angle_l); var sin_l = dsin(angle_l);
-    var lx1 = lx + (x1_l*cos_l - y1_l*sin_l); var ly1 = target_l_y + (x1_l*sin_l + y1_l*cos_l);
-    var lx2 = lx + (x2_l*cos_l - y1_l*sin_l); var ly2 = target_l_y + (x2_l*sin_l + y1_l*cos_l);
-    var lx3 = lx + (x2_l*cos_l - y2_l*sin_l); var ly3 = target_l_y + (x2_l*sin_l + y2_l*cos_l);
-    var lx4 = lx + (x1_l*cos_l - y2_l*sin_l); var ly4 = target_l_y + (x1_l*sin_l + y2_l*cos_l);
-    draw_set_color(c_border);  draw_primitive_begin(pr_trianglefan); draw_vertex(lx1,ly1); draw_vertex(lx2,ly2); draw_vertex(lx3,ly3); draw_vertex(lx4,ly4); draw_primitive_end();
-    draw_set_color(c_l_base);  draw_primitive_begin(pr_trianglefan); draw_vertex(lx1+2,ly1+2); draw_vertex(lx2-2,ly2+2); draw_vertex(lx3-2,ly3-2); draw_vertex(lx4+2,ly4-2); draw_primitive_end();
-    var ilx1 = lx+(ix1_l*cos_l-iy1_l*sin_l); var ily1 = target_l_y+(ix1_l*sin_l+iy1_l*cos_l);
-    var ilx2 = lx+(ix2_l*cos_l-iy1_l*sin_l); var ily2 = target_l_y+(ix2_l*sin_l+iy1_l*cos_l);
-    var ilx3 = lx+(ix2_l*cos_l-iy2_l*sin_l); var ily3 = target_l_y+(ix2_l*sin_l+iy2_l*cos_l);
-    var ilx4 = lx+(ix1_l*cos_l-iy2_l*sin_l); var ily4 = target_l_y+(ix1_l*sin_l+iy2_l*cos_l);
-    draw_set_color(c_border);  draw_primitive_begin(pr_trianglefan); draw_vertex(ilx1,ily1); draw_vertex(ilx2,ily2); draw_vertex(ilx3,ily3); draw_vertex(ilx4,ily4); draw_primitive_end();
-    draw_set_color(c_l_panel); draw_primitive_begin(pr_trianglefan); draw_vertex(ilx1+2,ily1+2); draw_vertex(ilx2-2,ily2+2); draw_vertex(ilx3-2,ily3-2); draw_vertex(ilx4+2,ily4-2); draw_primitive_end();
+    // Render Turret Kiri
+    if (bottom_destroyed && phase != 3) {
+        var angle_l = puing_l_angle;
+        var cos_l = dcos(angle_l); var sin_l = dsin(angle_l);
+        var lx1 = lx + (x1_l*cos_l - y1_l*sin_l); var ly1 = target_l_y + (x1_l*sin_l + y1_l*cos_l);
+        var lx2 = lx + (x2_l*cos_l - y1_l*sin_l); var ly2 = target_l_y + (x2_l*sin_l + y1_l*cos_l);
+        var lx3 = lx + (x2_l*cos_l - y2_l*sin_l); var ly3 = target_l_y + (x2_l*sin_l + y2_l*cos_l);
+        var lx4 = lx + (x1_l*cos_l - y2_l*sin_l); var ly4 = target_l_y + (x1_l*sin_l + y2_l*cos_l);
+        
+        // Kotak Luar (Border)
+        draw_set_color(c_border); draw_primitive_begin(pr_trianglefan); draw_vertex(lx1,ly1); draw_vertex(lx2,ly2); draw_vertex(lx3,ly3); draw_vertex(lx4,ly4); draw_primitive_end();
+        // Kotak Dalam (Isi)
+        draw_set_color(c_l_base); draw_primitive_begin(pr_trianglefan); draw_vertex(lx1+2,ly1+2); draw_vertex(lx2-2,ly2+2); draw_vertex(lx3-2,ly3-2); draw_vertex(lx4+2,ly4-2); draw_primitive_end();
+    } else {
+        // Kondisi Normal / Belum Hancur
+        draw_set_color(c_border);  draw_rectangle(lx - t_width - 2, target_l_y - (t_height/2) - 2, lx + t_width + 2, target_l_y + (t_height/2) + 2, false);
+        draw_set_color(c_l_base);  draw_rectangle(lx - t_width, target_l_y - (t_height/2), lx + t_width, target_l_y + (t_height/2), false);
+        draw_set_color(c_border);  draw_rectangle(lx - t_width + 20, target_l_y - (t_height/2) + 20, lx + t_width - 20, target_l_y + (t_height/2) - 20, false);
+        draw_set_color(c_l_panel); draw_rectangle(lx - t_width + 22, target_l_y - (t_height/2) + 22, lx + t_width - 22, target_l_y + (t_height/2) - 22, false);
+    }
 
-    // CRACK KIRI
+    // Efek Retak (Crack) Turret Kiri
     if (phase == 2 && !bottom_destroyed && core_bottom_hp < 5) {
         random_set_seed(crack_seed_l + core_bottom_hp);
         draw_set_color(c_black); draw_set_alpha(0.7);
@@ -115,35 +124,42 @@ if (!boss_fully_dead) {
         for (var ci = 0; ci < crack_count; ci++) {
             var cx1 = lx + random_range(-50, 50); var cy1 = target_l_y + random_range(-40, 40);
             draw_line_width(cx1, cy1, cx1 + random_range(-20, 20), cy1 + random_range(-20, 20), 2);
-            draw_line_width(cx1, cy1, cx1 + random_range(-15, 15), cy1 + random_range(-15, 15), 1);
         }
         draw_set_alpha(1.0); random_set_seed(current_time);
     }
     draw_set_alpha(1.0);
 
-    // KOTAK KANAN
-    var target_r_y = (top_destroyed || phase == 3) ? puing_r_y : laras_y_offset;
-    var c_r_base   = (phase == 3 || top_destroyed) ? make_color_rgb(30, 32, 35) : c_armor_dark;
-    var c_r_panel  = (phase == 3 || top_destroyed) ? make_color_rgb(45, 48, 50) : c_armor_mid;
-    var angle_r    = (top_destroyed || phase == 3) ? puing_r_angle : 0;
+
+    // --- 2. KOTAK TURRET KANAN ---
+    var target_r_y = (phase == 3) ? laras_y_offset : ((top_destroyed) ? puing_r_y : laras_y_offset);
+    var c_r_base   = (phase == 3) ? c_armor_dark   : ((top_destroyed) ? make_color_rgb(30, 32, 35) : c_armor_dark);
+    var c_r_panel  = (phase == 3) ? c_armor_mid    : ((top_destroyed) ? make_color_rgb(45, 48, 50) : c_armor_mid);
+    
     if (jeda_fase3 > 450) target_r_y = laras_y_offset;
     if (phase == 3) draw_set_alpha(magnet_progress);
 
-    var cos_r = dcos(angle_r); var sin_r = dsin(angle_r);
-    var rx1 = rx+(x1_l*cos_r-y1_l*sin_r); var ry1 = target_r_y+(x1_l*sin_r+y1_l*cos_r);
-    var rx2 = rx+(x2_l*cos_r-y1_l*sin_r); var ry2 = target_r_y+(x2_l*sin_r+y1_l*cos_r);
-    var rx3 = rx+(x2_l*cos_r-y2_l*sin_r); var ry3 = target_r_y+(x2_l*sin_r+y2_l*cos_r);
-    var rx4 = rx+(x1_l*cos_r-y2_l*sin_r); var ry4 = target_r_y+(x1_l*sin_r+y2_l*cos_r);
-    draw_set_color(c_border);  draw_primitive_begin(pr_trianglefan); draw_vertex(rx1,ry1); draw_vertex(rx2,ry2); draw_vertex(rx3,ry3); draw_vertex(rx4,ry4); draw_primitive_end();
-    draw_set_color(c_r_base);  draw_primitive_begin(pr_trianglefan); draw_vertex(rx1+2,ry1+2); draw_vertex(rx2-2,ry2+2); draw_vertex(rx3-2,ry3-2); draw_vertex(rx4+2,ry4-2); draw_primitive_end();
-    var irx1 = rx+(ix1_l*cos_r-iy1_l*sin_r); var iry1 = target_r_y+(ix1_l*sin_r+iy1_l*cos_r);
-    var irx2 = rx+(ix2_l*cos_r-iy1_l*sin_r); var iry2 = target_r_y+(ix2_l*sin_r+iy2_l*cos_r);
-    var irx3 = rx+(ix2_l*cos_r-iy2_l*sin_r); var iry3 = target_r_y+(ix2_l*sin_r+iy2_l*cos_r);
-    var irx4 = rx+(ix1_l*cos_r-iy2_l*sin_r); var iry4 = target_r_y+(ix1_l*sin_r+iy2_l*cos_r);
-    draw_set_color(c_border);  draw_primitive_begin(pr_trianglefan); draw_vertex(irx1,iry1); draw_vertex(irx2,iry2); draw_vertex(irx3,iry3); draw_vertex(irx4,iry4); draw_primitive_end();
-    draw_set_color(c_r_panel); draw_primitive_begin(pr_trianglefan); draw_vertex(irx1+2,iry1+2); draw_vertex(irx2-2,iry2+2); draw_vertex(irx3-2,iry3-2); draw_vertex(irx4+2,iry4-2); draw_primitive_end();
+    // Render Turret Kanan (Memakai basis rumus kotak x1_l, y1_l, x2_l, y2_l yang sama agar ukurannya presisi)
+    if (top_destroyed && phase != 3) {
+        var angle_r = puing_r_angle;
+        var cos_r = dcos(angle_r); var sin_r = dsin(angle_r);
+        var rx1 = rx + (x1_l*cos_r - y1_l*sin_r); var ry1 = target_r_y + (x1_l*sin_r + y1_l*cos_r);
+        var rx2 = rx + (x2_l*cos_r - y1_l*sin_r); var ry2 = target_r_y + (x2_l*sin_r + y1_l*cos_r);
+        var rx3 = rx + (x2_l*cos_r - y2_l*sin_r); var ry3 = target_r_y + (x2_l*sin_r + y2_l*cos_r);
+        var rx4 = rx + (x1_l*cos_r - y2_l*sin_r); var ry4 = target_r_y + (x1_l*sin_r + y2_l*cos_r);
+        
+        // Kotak Luar (Border) - Menggunakan 4 vertex segitiga fan agar jadi kotak utuh saat berputar
+        draw_set_color(c_border); draw_primitive_begin(pr_trianglefan); draw_vertex(rx1,ry1); draw_vertex(rx2,ry2); draw_vertex(rx3,ry3); draw_vertex(rx4,ry4); draw_primitive_end();
+        // Kotak Dalam (Isi)
+        draw_set_color(c_r_base); draw_primitive_begin(pr_trianglefan); draw_vertex(rx1+2,ry1+2); draw_vertex(rx2-2,ry2+2); draw_vertex(rx3-2,ry3-2); draw_vertex(rx4+2,ry4-2); draw_primitive_end();
+    } else {
+        // Kondisi Normal / Belum Hancur
+        draw_set_color(c_border);  draw_rectangle(rx - t_width - 2, target_r_y - (t_height/2) - 2, rx + t_width + 2, target_r_y + (t_height/2) + 2, false);
+        draw_set_color(c_r_base);  draw_rectangle(rx - t_width, target_r_y - (t_height/2), rx + t_width, target_r_y + (t_height/2), false);
+        draw_set_color(c_border);  draw_rectangle(rx - t_width + 20, target_r_y - (t_height/2) + 20, rx + t_width - 20, target_r_y + (t_height/2) - 20, false);
+        draw_set_color(c_r_panel); draw_rectangle(rx - t_width + 22, target_r_y - (t_height/2) + 22, rx + t_width - 22, target_r_y + (t_height/2) - 22, false);
+    }
 
-    // CRACK KANAN
+    // Efek Retak (Crack) Turret Kanan
     if (phase == 2 && !top_destroyed && core_top_hp < 5) {
         random_set_seed(crack_seed_r + core_top_hp);
         draw_set_color(c_black); draw_set_alpha(0.7);
@@ -151,7 +167,6 @@ if (!boss_fully_dead) {
         for (var ci = 0; ci < crack_count_r; ci++) {
             var crx1 = rx + random_range(-50, 50); var cry1 = target_r_y + random_range(-40, 40);
             draw_line_width(crx1, cry1, crx1 + random_range(-20, 20), cry1 + random_range(-20, 20), 2);
-            draw_line_width(crx1, cry1, crx1 + random_range(-15, 15), cry1 + random_range(-15, 15), 1);
         }
         draw_set_alpha(1.0); random_set_seed(current_time);
     }
@@ -161,7 +176,6 @@ if (!boss_fully_dead) {
     // RENDER PARTIKEL LEDAKAN ORGANIK
     // ===================================================================
     for (var _pi = 0; _pi < expl_max; _pi++) {
-        // PARTIKEL KIRI
         if (expl_l_life[_pi] > 0) {
             var _lratio = expl_l_life[_pi] / expl_l_maxlife[_pi];
             var _lalpha = _lratio;
@@ -188,7 +202,6 @@ if (!boss_fully_dead) {
             }
         }
 
-        // PARTIKEL KANAN
         if (expl_r_life[_pi] > 0) {
             var _rratio = expl_r_life[_pi] / expl_r_maxlife[_pi];
             var _ralpha = _rratio;
@@ -275,23 +288,26 @@ if (!boss_fully_dead) {
     }
 
     // ===================================================================
-    // PERBAIKAN: BLOK PENGGAMBARAN VOLT-TETHER (AYUNAN PERSEGI) DIHAPUS
+    // MONCONG DAN LARAS MERIAM DIRENDER KEMBALI DI FASE 3
     // ===================================================================
-
-    // LARAS MERIAM
     draw_set_color(c_border);
-    if (!bottom_destroyed && phase != 3 && jeda_fase3 <= 0) {
+    // Render Laras Meriam Kiri
+    if (phase == 3 || (!bottom_destroyed && jeda_fase3 <= 0)) {
         var tl_x = lx+lengthdir_x(90,top_angle); var tl_y = laras_y_offset+lengthdir_y(90,top_angle);
         draw_line_width(lx,laras_y_offset,tl_x,tl_y,26); draw_set_color(c_armor_mid); draw_line_width(lx,laras_y_offset,tl_x,tl_y,16);
     }
+    
+    // Render Laras Meriam Kanan
     draw_set_color(c_border);
-    if (!top_destroyed && phase != 3 && jeda_fase3 <= 0) {
+    if (phase == 3 || (!top_destroyed && jeda_fase3 <= 0)) {
         var tr_x = rx+lengthdir_x(90,bottom_angle); var tr_y = laras_y_offset+lengthdir_y(90,bottom_angle);
         draw_line_width(rx,laras_y_offset,tr_x,tr_y,26); draw_set_color(c_armor_mid); draw_line_width(rx,laras_y_offset,tr_x,tr_y,16);
     }
-    if (phase != 3 && jeda_fase3 <= 0) {
-        draw_set_color(!bottom_destroyed ? make_color_rgb(230,40,40) : make_color_rgb(40,40,40)); draw_circle(lx, laras_y_offset, 16, false);
-        draw_set_color(!top_destroyed    ? make_color_rgb(230,40,40) : make_color_rgb(40,40,40)); draw_circle(rx, laras_y_offset, 16, false);
+    
+    // Render Lingkaran Core Meriam (Titik Sendi Putar Meriam)
+    if (phase == 3 || (phase != 3 && jeda_fase3 <= 0)) {
+        draw_set_color((phase == 3 || !bottom_destroyed) ? make_color_rgb(230,40,40) : make_color_rgb(40,40,40)); draw_circle(lx, laras_y_offset, 16, false);
+        draw_set_color((phase == 3 || !top_destroyed)    ? make_color_rgb(230,40,40) : make_color_rgb(40,40,40)); draw_circle(rx, laras_y_offset, 16, false);
     }
 
     // ===================================================================

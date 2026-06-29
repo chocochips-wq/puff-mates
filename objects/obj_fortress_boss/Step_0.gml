@@ -162,6 +162,74 @@ if (phase == 3 && !is_enraged && core_main_hp < 30) {
 if (is_enraged) enrage_flash_timer++;
 
 // ===================================================================
+// LOGIKA TAMBAHAN: TURRET OTOMATIS AKTIF KEMBALI DI FASE 3
+// ===================================================================
+if (phase == 3 && !overload_active) {
+    // Kita gunakan alarm bawaan boss atau variabel timer baru khusus turret Fase 3.
+    // Jika belum ada variabel timer_turret_fase3 di Create Event, GameMaker otomatis aman memakai variable_instance.
+    if (!variable_instance_exists(id, "turret_fase3_timer")) {
+        turret_fase3_timer = 80; // Jeda tembakan awal turret di Fase 3
+    }
+    
+    turret_fase3_timer--;
+    
+    // Target tembakan turret Fase 3 (Ikuti logika targeting yang sudah ada)
+    var target_l = instance_exists(real_p1) ? real_p1 : real_p2;
+    var target_r = instance_exists(real_p2) ? real_p2 : real_p1;
+    
+    // Turret Kiri membidik Player Kiri
+    if (instance_exists(target_l) && (variable_instance_exists(target_l, "is_dead_phase2") && !target_l.is_dead_phase2)) {
+        var ta = point_direction(l_turret_x, turret_base_y, target_l.x, target_l.y);
+        top_angle = clamp(ta, 190, 350); // Sudut bidik diperluas sedikit biar lebih responsif
+    }
+    
+    // Turret Kanan membidik Player Kanan
+    if (instance_exists(target_r) && (variable_instance_exists(target_r, "is_dead_phase2") && !target_r.is_dead_phase2)) {
+        var ba = point_direction(r_turret_x, turret_base_y, target_r.x, target_r.y);
+        bottom_angle = clamp(ba, 190, 350);
+    }
+
+    // Waktunya Turret Menembak!
+    if (turret_fase3_timer <= 0) {
+        // Beri jeda tembakan (jika enraged, turret menembak lebih membabi buta jirr!)
+        turret_fase3_timer = is_enraged ? 45 : 70; 
+        
+        // Tembakan Turret Kiri
+        var b_f3_left = instance_create_layer(
+            l_turret_x + lengthdir_x(90, top_angle),
+            turret_base_y + lengthdir_y(90, top_angle),
+            "Instances_1", obj_snowball_1
+        );
+        if (b_f3_left != noone) {
+            var _spd = is_enraged ? 4.5 : 3.2;
+            b_f3_left.hsp         = lengthdir_x(_spd, top_angle);
+            b_f3_left.vsp         = lengthdir_y(_spd, top_angle);
+            b_f3_left.bullet_type = "phase1"; // Pakai tipe phase1 biar polanya lurus terarah
+            b_f3_left.lifetime    = 280;
+            b_f3_left.use_gravity = false;
+        }
+        
+        // Tembakan Turret Kanan
+        var b_f3_right = instance_create_layer(
+            r_turret_x + lengthdir_x(90, bottom_angle),
+            turret_base_y + lengthdir_y(90, bottom_angle),
+            "Instances_1", obj_snowball_1
+        );
+        if (b_f3_right != noone) {
+            var _spd = is_enraged ? 4.5 : 3.2;
+            b_f3_right.hsp         = lengthdir_x(_spd, bottom_angle);
+            b_f3_right.vsp         = lengthdir_y(_spd, bottom_angle);
+            b_f3_right.bullet_type = "phase1";
+            b_f3_right.lifetime    = 280;
+            b_f3_right.use_gravity = false;
+        }
+        
+        // Efek hentakan kecil pada kamera pas turret nembak biar makin berasa impact-nya
+        cam_shake_amount = max(cam_shake_amount, 3);
+    }
+}
+
+// ===================================================================
 // UPDATE PARTIKEL LEDAKAN SEMENTARA
 // ===================================================================
 expl_spawn_timer--;
