@@ -1,16 +1,18 @@
+/// @description Logika Hitbox Laser & Proteksi Player
+
 pulse_timer++;
 
-// =======================
+// ===================================================================
 // CEK COLLISION DENGAN PLAYER
-// Laser berbahaya kecuali player dilindungi payung
-// =======================
+// Laser berbahaya kecuali player dilindungi payung tepat di bawahnya
+// ===================================================================
 var umbrella = instance_find(obj_umbrella, 0);
 
 with(obj_player) {
-    // Cek apakah player dalam jalur laser (x)
+    // Cek apakah player dalam jalur laser secara horizontal (x)
     var in_laser_x = (x > other.x - other.laser_width)
                   && (x < other.x + other.laser_width);
-    // Cek apakah player dalam panjang laser (y)
+    // Cek apakah player dalam panjang laser secara vertikal (y)
     var in_laser_y = (y > other.y)
                   && (y < other.y + other.laser_length);
 
@@ -18,9 +20,10 @@ with(obj_player) {
         // Cek apakah dilindungi payung
         var protected = false;
         if(umbrella != noone && umbrella.holder != noone) {
-            var umb_x = umbrella.x;
-            // Player di bawah payung (dalam radius 80px horizontal)
-            if(abs(x - umb_x) < 80) protected = true;
+            // PERBAIKAN: Posisi X laser ini harus berada di dalam batas kiri-kanan fisik payung saat ini
+            if (other.x >= umbrella.bbox_left && other.x <= umbrella.bbox_right) {
+                protected = true;
+            }
         }
         if(!protected) scr_respawn();
     }

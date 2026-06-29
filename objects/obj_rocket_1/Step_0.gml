@@ -1,3 +1,5 @@
+/// @description Logika Utama Pergerakan & State Machine Roket 1
+
 // ===================================================================
 // VARIABEL PENGAMAN AWAL
 // ===================================================================
@@ -6,31 +8,37 @@ if (!variable_instance_exists(id, "bullet_type")) {
 }
 
 // ===================================================================
-// LOGIKA KHUSUS 1: DETEKSI PANTULAN ROKET OVERHEAT FASE 3 (PAPAN KAYU)
+// LOGIKA KHUSUS 1: DETEKSI PANTULAN ROKET OVERHEAT FASE 3 (PAYUNG PRESISI)
 // ===================================================================
 if (bullet_type == "giga_overheat") {
     
-    // Cek tabrakan dengan papan kayu player
-    var hit_umb = instance_place(x, y, obj_umbrella);
-    // Anti-tembus jarak radius cadangan
-    if (hit_umb == noone) {
-        var near_umb = instance_nearest(x, y, obj_umbrella);
-        if (near_umb != noone && point_distance(x, y, near_umb.x, near_umb.y) < 95) {
-            hit_umb = near_umb;
+    var umbrella = instance_find(obj_umbrella, 0);
+    var hit_by_umbrella = false;
+
+    if (umbrella != noone && umbrella.holder != noone) {
+        // 1. Cek horizontal: Koordinat X roket harus berada di dalam lebar fisik payung
+        var inside_umbrella_x = (x >= umbrella.bbox_left && x <= umbrella.bbox_right);
+        
+        // 2. Cek vertikal: Jarak ujung bawah roket mendekati permukaan atas payung
+        var inside_umbrella_y = (y >= umbrella.y - 35 && y <= umbrella.y + 15);
+        
+        if (inside_umbrella_x && inside_umbrella_y) {
+            hit_by_umbrella = true;
         }
     }
 
-    // Jika kena papan kayu yang aktif held oleh player
-    if (hit_umb != noone && hit_umb.holder != noone) {
+    // Jika sukses terbentur payung secara presisi visual
+    if (hit_by_umbrella) {
         var boss = instance_find(obj_fortress_boss, 0);
         if (boss != noone && boss.phase == 3 && boss.fase3_mode == 4) {
             
-            status = -1;
-            // Keluar dari status bawaan 0/1/2/3 agar tidak diganggu logic tanah
+            status = -1; // Keluar dari status bawaan 0/1/2/3 agar tidak diganggu logic tanah
             bullet_type = "giga_reflected";
-            // Ubah tipe agar melukai bos
-            image_blend = c_aqua;
-            // Efek lebay: Roket berubah warna jadi biru neon
+            image_blend = c_aqua; // Roket berubah warna jadi biru neon
+            
+            // FIX VISUAL: Paksa skala roket kembali normal 1:1 agar ukurannya tidak rusak saat membal
+            image_xscale = 1.0;
+            image_yscale = 1.0;
             
             // Balikkan arah roket tegak lurus ke atas menuju core perut bos
             var target_x = boss.x;
@@ -38,11 +46,14 @@ if (bullet_type == "giga_overheat") {
             var ang = point_direction(x, y, target_x, target_y);
             
             if (variable_instance_exists(id, "dir_angle")) dir_angle = ang;
+            
             // Efek Kinetik: Roket meluncur kilat ke atas!
             hsp = lengthdir_x(14.0, ang);
             vsp = lengthdir_y(14.0, ang);
-            // FIX: Begitu terpukul sukses, paksa bos langsung menyudahi fase lemasnya
+            
+            // Begitu terpukul sukses, paksa bos langsung menyudahi fase lemasnya
             boss.fase3_timer = 0;
+            audio_play_sound(sound_key, 1, false); // Kasih SFX dentangan pantulan sukses
         }
     }
 }
@@ -56,10 +67,10 @@ if (bullet_type == "giga_reflected") {
         var dist_core = point_distance(x, y, boss.x, boss.y + 160);
         if (dist_core < 95) {
             if (variable_instance_exists(boss, "core_main_hp")) {
-                boss.core_main_hp -= 100;
-                //OOM! Potong 25 HP
+                // PERBAIKAN: Dikurangi 25 HP agar membutuhkan total 4 hantaman roket baru bos kalah
+                boss.core_main_hp -= 100; 
                 boss.hit_flash = 25;
-                audio_play_sound(sound_lompat, 1, false); // Kasih sfx hantaman
+                audio_play_sound(sound_lompat, 1, false); // SFX hantaman keras balik
                 
                 // Efek Getar Ledakan Lebay pada bodi bos
                 boss.x += irandom_range(-10, 10);
@@ -87,7 +98,7 @@ if (bullet_type == "giga_reflected") {
 }
 
 // ==========================================
-// STATUS 0: MELUNCUR JATUH DARI LANGIT (AKURAT)
+// STATUS 0: MELUNCUR JATUH DARI LANGIT
 // ==========================================
 if (status == 0) {
     x += hsp;
@@ -178,54 +189,49 @@ else if (status == 2) {
 }
 
 // ===================================================================
-// STATUS 3: MELESAT BALIK NYERANG (MATEMATIKA MURNI REK-PRESISI JUGGERNAUT)
+// STATUS 3: MELESAT BALIK NYERANG TURRET BOS (FASE 2)
 // ===================================================================
 else if (status == 3) {
     y += vsp;
     var boss = instance_find(obj_fortress_boss, 0);
     if (boss != noone && boss.phase == 2) {
         
-        // 1. Ekstrak koordinat bodi ter-goyang milik bos secara dinamis
         var b_bob = sin(boss.bob_time) * 5;
         var b_bx = boss.x;
         var b_by = boss.y + b_bob;
         
-        // 2. Set pusat kotak turet matematika (Sesuai presisi gambar screenshot-mu)
         var mat_left_tx  = b_bx - 215; 
         var mat_right_tx = b_bx + 215; 
         var mat_turret_ty = b_by - 10; 
         
-        // 3. Bangun dimensi area sensitif turet (Lebar: 150, Tinggi: 110) -> Setengah lebar=75, tinggi=55
         var in_kiri  = (x >= mat_left_tx - 75  && x <= mat_left_tx + 75  && y >= mat_turret_ty - 55 && y <= mat_turret_ty + 55);
         var in_kanan = (x >= mat_right_tx - 75 && x <= mat_right_tx + 75 && y >= mat_turret_ty - 55 && y <= mat_turret_ty + 55);
         
         var can_damage_boss = (boss.hit_flash <= 0);
 
-        // A. KALKULASI HITBOX TURET KANAN MATEMATIKA
+        // A. KALKULASI HITBOX TURET KANAN
         if (!boss.top_destroyed && in_kanan) {
             if (can_damage_boss) {
                 boss.core_top_hp -= 1;
                 boss.hit_flash = 20;
                 audio_play_sound(sound_lompat, 1, false);
-                if (boss.core_top_hp <= 0) { boss.top_destroyed = true; boss.hp -= 4.5; } 
+                if(boss.core_top_hp <= 0) boss.top_destroyed = true;
             }
-            instance_destroy();
-            exit;
+            instance_destroy(); exit;
         }
         
-        // B. KALKULASI HITBOX TURET KIRI MATEMATIKA
+        // B. KALKULASI HITBOX TURET KIRI
         if (!boss.bottom_destroyed && in_kiri) {
             if (can_damage_boss) {
                 boss.core_bottom_hp -= 1;
                 boss.hit_flash = 20;
                 audio_play_sound(sound_lompat, 1, false);
-                if (boss.core_bottom_hp <= 0) { boss.bottom_destroyed = true; boss.hp -= 4.5; }
+                if(boss.core_bottom_hp <= 0) boss.bottom_destroyed = true;
             }
-            instance_destroy();
-            exit;
+            instance_destroy(); exit;
         }
-        
-        // C. JIKA KEDUA TURET HANCUR -> SERANG BODI UTAMA TENGAH (Lebar 230x200 -> rX=115, rY=100)
+
+        // C. JIKA KEDUA TURET HANCUR -> SERANG BODI UTAMA TENGAH
         if (boss.top_destroyed && boss.bottom_destroyed) {
             var in_bodi_tengah = (x >= b_bx - 115 && x <= b_bx + 115 && y >= b_by - 100 && y <= b_by + 100);
             if (in_bodi_tengah) {

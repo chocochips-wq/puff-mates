@@ -24,7 +24,7 @@
   "isEcma":false,
   "LibraryEmitters":[],
   "MetaData":{
-    "IDEVersion":"2024.14.4.222",
+    "IDEVersion":"2026.0.0.16",
   },
   "name":"puff mates",
   "resources":[
@@ -47,7 +47,6 @@
     {"id":{"name":"obj_ice_area","path":"objects/obj_ice_area/obj_ice_area.yy",},},
     {"id":{"name":"obj_key","path":"objects/obj_key/obj_key.yy",},},
     {"id":{"name":"obj_laser_fase3","path":"objects/obj_laser_fase3/obj_laser_fase3.yy",},},
-    {"id":{"name":"obj_laser_h","path":"objects/obj_laser_h/obj_laser_h.yy",},},
     {"id":{"name":"obj_laser","path":"objects/obj_laser/obj_laser.yy",},},
     {"id":{"name":"obj_lava","path":"objects/obj_lava/obj_lava.yy",},},
     {"id":{"name":"obj_lift","path":"objects/obj_lift/obj_lift.yy",},},
@@ -67,7 +66,6 @@
     {"id":{"name":"obj_snowball","path":"objects/obj_snowball/obj_snowball.yy",},},
     {"id":{"name":"obj_spike_retract","path":"objects/obj_spike_retract/obj_spike_retract.yy",},},
     {"id":{"name":"obj_spike","path":"objects/obj_spike/obj_spike.yy",},},
-    {"id":{"name":"obj_stalactite","path":"objects/obj_stalactite/obj_stalactite.yy",},},
     {"id":{"name":"obj_ui","path":"objects/obj_ui/obj_ui.yy",},},
     {"id":{"name":"obj_umbrella_side","path":"objects/obj_umbrella_side/obj_umbrella_side.yy",},},
     {"id":{"name":"obj_umbrella","path":"objects/obj_umbrella/obj_umbrella.yy",},},
@@ -122,12 +120,12 @@
   "resourceVersion":"2.0",
   "RoomOrderNodes":[
     {"roomId":{"name":"Room5","path":"rooms/Room5/Room5.yy",},},
+    {"roomId":{"name":"rm_end","path":"rooms/rm_end/rm_end.yy",},},
+    {"roomId":{"name":"Room4","path":"rooms/Room4/Room4.yy",},},
     {"roomId":{"name":"rm_menu","path":"rooms/rm_menu/rm_menu.yy",},},
     {"roomId":{"name":"Room1","path":"rooms/Room1/Room1.yy",},},
     {"roomId":{"name":"Room2","path":"rooms/Room2/Room2.yy",},},
     {"roomId":{"name":"Room3","path":"rooms/Room3/Room3.yy",},},
-    {"roomId":{"name":"Room4","path":"rooms/Room4/Room4.yy",},},
-    {"roomId":{"name":"rm_end","path":"rooms/rm_end/rm_end.yy",},},
   ],
   "templateType":"game",
   "TextureGroups":[

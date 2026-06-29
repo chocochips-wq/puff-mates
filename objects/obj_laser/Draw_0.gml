@@ -1,12 +1,15 @@
-// =======================
-// CARI TITIK POTONG
-// =======================
+/// @description Render Efek Visual Laser Zigzag Presisi
+
+// ===================================================================
+// CARI TITIK POTONG (Hanya memotong visual jika menabrak fisik payung)
+// ===================================================================
 var laser_end_y = y + laser_length;
 var umbrella    = instance_find(obj_umbrella, 0);
 var blocked     = false;
 
 if(umbrella != noone && umbrella.holder != noone) {
-    if(abs(umbrella.x - x) < 70) {
+    // PERBAIKAN: Sinar X laser ini hanya akan terpotong jika tepat mengenai koordinat fisik payung
+    if (x >= umbrella.bbox_left && x <= umbrella.bbox_right) {
         if(umbrella.y > y && umbrella.y < laser_end_y) {
             laser_end_y = umbrella.y;
             blocked     = true;
@@ -19,17 +22,17 @@ if(draw_length <= 0) exit;
 
 pulse_timer++;
 
-// =======================
+// ===================================================================
 // DRAW ZIGZAG ANIMASI
-// =======================
+// ===================================================================
 var seg_height = 8;   // tinggi tiap segitiga zigzag
 var zag_width  = 6;   // lebar zigzag kiri kanan
-var anim_speed = 1;    // kecepatan animasi turun
+var anim_speed = 1;   // kecepatan animasi turun
 
 // Offset animasi — bikin zigzag terlihat bergerak ke bawah
 var anim_offset = - (pulse_timer * anim_speed) mod (seg_height * 2);
 
-var cur_y   = y - anim_offset;
+var cur_y    = y - anim_offset;
 var go_right = true;
 
 // Kumpulkan titik-titik zigzag
@@ -79,10 +82,9 @@ for(var i = 0; i < array_length(points_x) - 1; i++) {
     draw_line_width(ax, ay, bx, by, 2);
 }
 
-
-// =======================
+// ===================================================================
 // EFEK IMPACT
-// =======================
+// ===================================================================
 var ip = sin(pulse_timer * 0.25) * 0.3 + 0.7;
 if(blocked) {
     draw_set_alpha(ip * 0.7);
