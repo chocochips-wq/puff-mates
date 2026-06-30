@@ -24,6 +24,14 @@ if (boss != noone) {
     // JIKA SUDAH MASUK FASE AKTIF (Mulai menyembur dan bergerak menyapu):
     else if (laser_timer <= 120 && laser_timer > 0) {
         is_lethal = true;
+
+        // BUGFIX AUDIO: mainkan sound_laser tepat saat laser ini mulai aktif.
+        // Guard dengan was_lethal + audio_is_playing supaya kalau ada 2
+        // laser_fase3 sekaligus (turret kiri+kanan) suaranya tidak dobel.
+        if (!was_lethal && !audio_is_playing(sound_laser)) {
+            audio_play_sound(sound_laser, 8, false);
+        }
+        was_lethal = true;
         
         // Pergerakan menyapu yang lambat dan kalem
         if (sweep_dir == 1) {

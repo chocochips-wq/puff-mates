@@ -1,0 +1,26 @@
+{
+  "$GMSound":"v2",
+  "%Name":"sound_bgm_boss_phase3",
+  "audioGroupId":{
+    "name":"audiogroup_default",
+    "path":"audiogroups/audiogroup_default",
+  },
+  "bitDepth":1,
+  "channelFormat":0,
+  "compression":0,
+  "compressionQuality":4,
+  "conversionMode":0,
+  "duration":241.03183,
+  "exportDir":"",
+  "name":"sound_bgm_boss_phase3",
+  "parent":{
+    "name":"audio_group_music",
+    "path":"folders/Sound/audio_group_music.yy",
+  },
+  "preload":false,
+  "resourceType":"GMSound",
+  "resourceVersion":"2.0",
+  "sampleRate":44100,
+  "soundFile":"sound_bgm_boss_phase3.mp3",
+  "volume":1.0,
+}

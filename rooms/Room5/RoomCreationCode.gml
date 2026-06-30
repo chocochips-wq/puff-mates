@@ -11,8 +11,12 @@ for(var i = 0; i < room_width; i += tile_size){
 }
 
 
+// BUGFIX: Room5 adalah room boss fight, BGM-nya dikendalikan penuh oleh
+// obj_fortress_boss (sound_bgm_boss_phase1/2/3). sound_bgm_main TIDAK boleh
+// diputar di sini karena menyebabkan dua musik bertumpuk (double sound)
+// sepanjang fase 1-3. Cukup hentikan semua sound yang nyangkut dari room
+// sebelumnya; boss akan memulai BGM-nya sendiri di event Create-nya.
 audio_stop_all();
-audio_play_sound(sound_bgm_main, 1, true);
 
 // Create backdrop controller to draw sky and ground (phase-driven)
 var bd_index = asset_get_index("obj_boss_backdrop");

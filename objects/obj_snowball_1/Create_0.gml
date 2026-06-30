@@ -37,3 +37,5 @@ owned_by_player = false;   // true = sudah diambil player, bergerak ke arah boss
 owner_id        = noone;   // siapa yang intercept
 intercept_timer = 0;       // cooldown setelah di-reflect agar tidak langsung kena player lagi
 throw_speed     = 14;      // kecepatan saat dilempar balik
+
+audio_play_sound(sound_snowball, 5, false);

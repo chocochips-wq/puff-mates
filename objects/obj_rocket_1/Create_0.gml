@@ -1,3 +1,9 @@
+/// @description Inisialisasi State Awal Giga Rocket
+
+if (!variable_instance_exists(id, "bullet_type")) {
+    bullet_type = "normal";
+}
+
 dir_angle  = 180;
 hsp        = 0;
 vsp        = 0;

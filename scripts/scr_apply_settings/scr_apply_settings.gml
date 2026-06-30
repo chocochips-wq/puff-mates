@@ -12,37 +12,55 @@ function scr_apply_settings() {
         audio_master_gain(global.vol_master);
     }
 
-    // Music group
-    if (audio_group_is_loaded(audio_group_music)) {
-        audio_group_set_gain(audio_group_music, global.mute_all ? 0 : global.vol_music, 0);
-    } else {
-        if (audio_exists(sound_menu)) {
-            audio_sound_gain(sound_menu, global.mute_all ? 0 : global.vol_music, 0);
-        }
-        if (audio_exists(sound_bgm_main)) {
-            audio_sound_gain(sound_bgm_main, global.mute_all ? 0 : global.vol_music, 0);
-        }
+    // Music
+    // BUGFIX: sebelumnya dibungkus if(audio_group_is_loaded(audio_group_music))
+    // yang selalu false karena group itu kosong (semua sound sebenarnya ada
+    // di audiogroup_default). Sekarang gain diatur langsung per-sound.
+    if (audio_exists(sound_menu)) {
+        audio_sound_gain(sound_menu, global.mute_all ? 0 : global.vol_music, 0);
+    }
+    if (audio_exists(sound_bgm_main)) {
+        audio_sound_gain(sound_bgm_main, global.mute_all ? 0 : global.vol_music, 0);
+    }
+    if (audio_exists(sound_bgm_boss_phase1)) {
+        audio_sound_gain(sound_bgm_boss_phase1, global.mute_all ? 0 : global.vol_music, 0);
+    }
+    if (audio_exists(sound_bgm_boss_phase2)) {
+        audio_sound_gain(sound_bgm_boss_phase2, global.mute_all ? 0 : global.vol_music, 0);
+    }
+    if (audio_exists(sound_bgm_boss_phase3)) {
+        audio_sound_gain(sound_bgm_boss_phase3, global.mute_all ? 0 : global.vol_music, 0);
     }
 
-    // SFX group
-    if (audio_group_is_loaded(audio_group_sfx)) {
-        audio_group_set_gain(audio_group_sfx, global.mute_all ? 0 : global.vol_sfx, 0);
-    } else {
-        if (audio_exists(sound_lompat)) {
-            audio_sound_gain(sound_lompat, global.mute_all ? 0 : global.vol_sfx, 0);
-        }
-        if (audio_exists(sound_cannon)) {
-            audio_sound_gain(sound_cannon, global.mute_all ? 0 : global.vol_sfx, 0);
-        }
-        if (audio_exists(sound_lava_hit)) {
-            audio_sound_gain(sound_lava_hit, global.mute_all ? 0 : global.vol_sfx, 0);
-        }
-        if (audio_exists(sound_key)) {
-            audio_sound_gain(sound_key, global.mute_all ? 0 : global.vol_sfx, 0);
-        }
-        if (audio_exists(sound_level_clear)) {
-            audio_sound_gain(sound_level_clear, global.mute_all ? 0 : global.vol_sfx, 0);
-        }
+    // SFX
+    // BUGFIX: sama seperti di atas, sekaligus menambahkan sound_snowball &
+    // sound_laser yang sebelumnya tidak pernah disertakan sama sekali.
+    if (audio_exists(sound_lompat)) {
+        audio_sound_gain(sound_lompat, global.mute_all ? 0 : global.vol_sfx, 0);
+    }
+    if (audio_exists(sound_cannon)) {
+        audio_sound_gain(sound_cannon, global.mute_all ? 0 : global.vol_sfx, 0);
+    }
+    if (audio_exists(sound_lava_hit)) {
+        audio_sound_gain(sound_lava_hit, global.mute_all ? 0 : global.vol_sfx, 0);
+    }
+    if (audio_exists(sound_key)) {
+        audio_sound_gain(sound_key, global.mute_all ? 0 : global.vol_sfx, 0);
+    }
+    if (audio_exists(sound_level_clear)) {
+        audio_sound_gain(sound_level_clear, global.mute_all ? 0 : global.vol_sfx, 0);
+    }
+    if (audio_exists(sound_snowball)) {
+        audio_sound_gain(sound_snowball, global.mute_all ? 0 : global.vol_sfx, 0);
+    }
+    if (audio_exists(sound_laser)) {
+        audio_sound_gain(sound_laser, global.mute_all ? 0 : global.vol_sfx, 0);
+    }
+    if (audio_exists(sound_boss_hit)) {
+        audio_sound_gain(sound_boss_hit, global.mute_all ? 0 : global.vol_sfx, 0);
+    }
+    if (audio_exists(sound_explosion_giga)) {
+        audio_sound_gain(sound_explosion_giga, global.mute_all ? 0 : global.vol_sfx, 0);
     }
 
     // ==========================================

@@ -32,9 +32,10 @@ if (core_main_hp <= 0) {
 
     if (death_timer == -1) {
         death_timer      = 180;
-        cam_shake_amount = 45; // Hantaman gempa awal sangat brutal!
+        cam_shake_amount = 45; 
+        
+        audio_stop_all();
 
-        // FIX SAKTI: Instant Revive semua player pas boss mati biar ga ada yang ketinggalan kereta!
         p1_respawn_timer = -1;
         p2_respawn_timer = -1;
         with (obj_player) {
@@ -142,7 +143,28 @@ if (phase == 1 && transisi_timer == -1) {
 }
 
 // ===================================================================
-// UPDATE ANIMASI
+// INTEGRASI BGM OVERRIDE MASTER (CEGAH BENTROK SOUND LAIN)
+// ===================================================================
+if (phase == 1) {
+    if (!audio_is_playing(sound_bgm_boss_phase1)) {
+        audio_stop_all(); 
+        current_bgm = sound_bgm_boss_phase1;
+        audio_play_sound(sound_bgm_boss_phase1, 1, true);
+    }
+}
+else if (phase == 2 && current_bgm != sound_bgm_boss_phase2 && transisi_timer <= 0) {
+    audio_stop_sound(sound_bgm_boss_phase1);
+    current_bgm = sound_bgm_boss_phase2;
+    audio_play_sound(current_bgm, 1, true);
+}
+else if (phase == 3 && current_bgm != sound_bgm_boss_phase3 && jeda_fase3 <= 0) {
+    audio_stop_sound(sound_bgm_boss_phase2);
+    current_bgm = sound_bgm_boss_phase3;
+    audio_play_sound(current_bgm, 1, true);
+}
+
+// ===================================================================
+// UPDATE ANIMASI & FISIKA DASAR POSISI KOORDINAT
 // ===================================================================
 pulse_time += lerp(0.05, 0.2, (phase == 3) ? 1 - (core_main_hp / 100) : 0);
 bob_time   += (transisi_timer > 0) ? 0.25 : 0.03;
@@ -159,7 +181,23 @@ turret_base_y = by + 20;
 var ground_y  = 710;
 
 // ===================================================================
-// ENRAGE
+// FIX SAKTI LERPING WARNA LANGIT (VARIABEL TARGET DISINKRONKAN)
+// ===================================================================
+if      (phase == 1) { bg_target_sky_r = 135; bg_target_sky_g = 206; bg_target_sky_b = 250; }
+else if (phase == 2) { bg_target_sky_r = 255; bg_target_sky_g = 100; bg_target_sky_b = 30;  }
+else                 { bg_target_sky_r = 40;  bg_target_sky_g = 30;  bg_target_sky_b = 60;  }
+
+bg_sky_r = lerp(bg_sky_r, bg_target_sky_r, bg_lerp_speed);
+bg_sky_g = lerp(bg_sky_g, bg_target_sky_g, bg_lerp_speed);
+bg_sky_b = lerp(bg_sky_b, bg_target_sky_b, bg_lerp_speed);
+
+var back_id = layer_background_get_id("Background");
+if (back_id != -1) {
+    layer_background_blend(back_id, make_color_rgb(round(bg_sky_r), round(bg_sky_g), round(bg_sky_b)));
+}
+
+// ===================================================================
+// ENRAGE MODE (HP SEKARAT FASE 3)
 // ===================================================================
 if (phase == 3 && !is_enraged && core_main_hp < 30) {
     is_enraged        = true;
@@ -208,6 +246,7 @@ if (phase == 3 && !overload_active) {
             b_f3_left.bullet_type = "phase1";
             b_f3_left.lifetime    = 280;
             b_f3_left.use_gravity = false;
+            audio_play_sound(sound_snowball, 5, false); 
         }
         
         var b_f3_right = instance_create_layer(
@@ -222,6 +261,7 @@ if (phase == 3 && !overload_active) {
             b_f3_right.bullet_type = "phase1";
             b_f3_right.lifetime    = 280;
             b_f3_right.use_gravity = false;
+            audio_play_sound(sound_snowball, 5, false); 
         }
         cam_shake_amount = max(cam_shake_amount, 3);
     }
@@ -253,7 +293,7 @@ if (expl_l_core_alpha > 0) expl_l_core_alpha -= 0.02;
 if (expl_r_core_alpha > 0) expl_r_core_alpha -= 0.02;
 
 // ===================================================================
-// FISIKA JATUH TURRET
+// FISIKA JATUH TURRET (HANCUR & MEMBAL DI TANAH)
 // ===================================================================
 if (jeda_fase3 > 0 && jeda_fase3 <= 450) {
     if (bottom_destroyed) {
@@ -445,22 +485,6 @@ if (jeda_fase3 > 0) {
     exit;
 }
 
-// ===================================================================
-// BACKGROUND WEATHER LERPING
-// ===================================================================
-if      (phase == 1) { bg_target_sky_r = 135; bg_target_sky_g = 206; bg_target_sky_b = 250; }
-else if (phase == 2) { bg_target_sky_r = 255; bg_target_sky_g = 100; bg_target_sky_b = 30;  }
-else                 { bg_target_sky_r = 40;  bg_target_sky_g = 30;  bg_target_sky_b = 60;  }
-
-bg_sky_r = lerp(bg_sky_r, bg_target_sky_r, bg_lerp_speed);
-bg_sky_g = lerp(bg_sky_g, bg_target_sky_g, bg_lerp_speed);
-bg_sky_b = lerp(bg_sky_b, bg_target_sky_b, bg_lerp_speed);
-
-var back_id = layer_background_get_id("Background");
-if (back_id != -1) {
-    layer_background_blend(back_id, make_color_rgb(round(bg_sky_r), round(bg_sky_g), round(bg_sky_b)));
-}
-
 if (phase == 3) {
     door_open_offset = lerp(door_open_offset, 55, 0.05);
     lightning_timer--;
@@ -486,13 +510,12 @@ if (phase == 2 || phase == 3) {
             p1_respawn_timer = max(1, p1_respawn_timer - 6);
         }
         
-        // FIX SAKTI: Pakai other.real_p1 biar gak nyari variabel gaib!
         if (instance_exists(real_p1) && real_p1.is_dead_phase2) {
             real_p1.has_umbrella = false;
             with(obj_umbrella) {
                 if (holder == other.real_p1.id) {
-                    holder = noone; // Putus hubungan kepemilikan
-                    x = xstart;     // Taruh balik ke tempat awal room
+                    holder = noone; 
+                    x = xstart;     
                     y = ystart;
                 }
             }
@@ -519,7 +542,6 @@ if (phase == 2 || phase == 3) {
             p2_respawn_timer = max(1, p2_respawn_timer - 6);
         }
         
-        // FIX SAKTI: Pakai other.real_p2 juga di sini!
         if (instance_exists(real_p2) && real_p2.is_dead_phase2) {
             real_p2.has_umbrella = false;
             with(obj_umbrella) {
@@ -580,12 +602,17 @@ if (phase == 2 || phase == 3) {
         if (instance_exists(real_p1)) { real_p1.is_dead_phase2 = false; real_p1.image_alpha = 1; real_p1.invincible_timer = 0; real_p1.has_umbrella = false; }
         if (instance_exists(real_p2)) { real_p2.is_dead_phase2 = false; real_p2.image_alpha = 1; real_p2.invincible_timer = 0; real_p2.has_umbrella = false; }
         with(obj_umbrella) { holder = noone; x = xstart; y = ystart; }
+        
+        audio_stop_all();
+        current_bgm = sound_bgm_boss_phase1;
+        audio_play_sound(current_bgm, 1, true);
+
         scr_respawn(); exit;
     }
 }
 
 // ==========================================
-// TARGETING
+// TARGETING (FIXED: KELURUSAN VARIABEL SUDUT TURET)
 // ==========================================
 var target_left  = real_p1;
 var target_right = real_p2;
@@ -597,6 +624,7 @@ if (instance_exists(real_p2)) {
 }
 
 if (phase == 1 || phase == 2) {
+    // Turret Kiri mengupdate top_angle (sesuai logic di Draw Event)
     if (!bottom_destroyed && instance_exists(target_left)) {
         var _p1_dead = (variable_instance_exists(target_left, "is_dead_phase2") && target_left.is_dead_phase2);
         if (!_p1_dead) {
@@ -604,6 +632,7 @@ if (phase == 1 || phase == 2) {
             top_angle = clamp(ta, 200, 340);
         }
     }
+    // Turret Kanan mengupdate bottom_angle (sesuai logic di Draw Event)
     if (!top_destroyed && instance_exists(target_right)) {
         var _p2_dead = (variable_instance_exists(target_right, "is_dead_phase2") && target_right.is_dead_phase2);
         if (!_p2_dead) {
@@ -628,6 +657,8 @@ if (phase == 3) {
         with (obj_laser_fase3) { instance_destroy(); }
         with (obj_snowball_1)  { instance_destroy(); }
         laser_already_spawned = false;
+        
+        audio_stop_sound(sound_laser); 
     }
 
     if (overload_active) {
@@ -676,6 +707,7 @@ if (phase == 3) {
                         _rb.depth        = id.depth - 10;
                     }
                 }
+                audio_play_sound(sound_snowball, 6, false); 
             }
             if (overload_ring_count >= 4 && overload_timer <= 0) core_main_hp = 0;
         }
@@ -698,6 +730,7 @@ if (phase == 3) {
                     b_snow.depth       = id.depth - 10;
                     b_snow.image_xscale = 1.0;
                     b_snow.image_yscale = 1.0;
+                    audio_play_sound(sound_snowball, 4, false); 
                 }
                 shoot_timer = is_enraged ? 2 : 4;
             }
@@ -731,11 +764,18 @@ if (phase == 3) {
                     laser_inst.depth = id.depth - 10;
                 }
                 laser_already_spawned = true;
+                
+                // FIXED: Memutar asset sound_laser asli (Bukan sound_snowball looping!)
+                if (!audio_is_playing(sound_laser)) {
+                    audio_play_sound(sound_laser, 10, true);
+                }
             }
             shoot_timer = 30;
             if (fase3_timer <= 0) {
                 fase3_mode = 3; fase3_timer = 180; shoot_timer = 0;
                 laser_already_spawned = false;
+                
+                audio_stop_sound(sound_laser); 
             }
         }
 
@@ -757,6 +797,7 @@ if (phase == 3) {
                         b_fan.image_yscale = 1.0;
                     }
                 }
+                audio_play_sound(sound_snowball, 5, false); 
                 rhythm_angle_offset += (15 * rhythm_dir);
                 if (abs(rhythm_angle_offset) >= 30) rhythm_dir = -rhythm_dir;
                 shoot_timer = is_enraged ? 7 : 12;
@@ -796,6 +837,7 @@ if (phase == 3) {
                         }
                     }
                 }
+                audio_play_sound(sound_snowball, 4, false); 
 
                 if (variable_instance_exists(id, "spiral_speed_wave")) {
                     spiral_speed_wave = (sin(fase3_timer * 0.08) * 2.5) + 4.0;
@@ -954,8 +996,11 @@ if (phase == 1 || phase == 2) {
                         cf_b.proj_color_b = 255;
                     }
                 }
+                audio_play_sound(sound_snowball, 5, false); 
                 hit_flash = 6;
             } else {
+                var played_shot_sfx = false;
+                
                 if (!bottom_destroyed) {
                     var b_top = instance_create_layer(
                         l_turret_x + lengthdir_x(90, top_angle),
@@ -967,6 +1012,7 @@ if (phase == 1 || phase == 2) {
                         b_top.bullet_type = "phase1";
                         b_top.lifetime    = 320;
                         b_top.use_gravity = false;
+                        played_shot_sfx = true;
                     }
                 }
                 if (!top_destroyed) {
@@ -980,7 +1026,12 @@ if (phase == 1 || phase == 2) {
                         b_bottom.bullet_type = "phase1";
                         b_bottom.lifetime    = 320;
                         b_bottom.use_gravity = false;
+                        played_shot_sfx = true;
                     }
+                }
+                
+                if (played_shot_sfx) {
+                    audio_play_sound(sound_snowball, 4, false); 
                 }
 
                 if (phase == 2) {
@@ -1012,6 +1063,7 @@ if (phase == 1 || phase == 2) {
                         mortar_timer  = 180;
                         scatter_state = 1;
                         scatter_hold_timer = 50;
+                        var played_mortar_sfx = false;
                         for (var _si = 0; _si < 8; _si++) {
                             var _sang = (_si / 8) * 360;
                             if (_sang < 160 || _sang > 380) continue;
@@ -1026,7 +1078,11 @@ if (phase == 1 || phase == 2) {
                                 _sb.proj_color_b = 0;
                                 _sb.bullet_type  = "phase3_split_ready";
                                 _sb.split_timer  = 50;
+                                played_mortar_sfx = true;
                             }
+                        }
+                        if (played_mortar_sfx) {
+                            audio_play_sound(sound_snowball, 5, false); 
                         }
                     }
                 }

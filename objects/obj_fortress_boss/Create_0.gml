@@ -97,17 +97,20 @@ phase2_pause_timer = 0;
 phase2_flash_alpha = 0;
 top_destroyed      = false;
 bottom_destroyed   = false;
-core_top_hp        = 1;
-core_bottom_hp     = 1;
+core_top_hp        = 5;
+core_bottom_hp     = 5;
 core_main_hp       = 100;
 door_open_offset   = 0;
 
 // ===================================================================
-// KILAT & BACKGROUND
+// KILAT & BACKGROUND WEATHER
 // ===================================================================
 lightning_timer  = 120;
 lightning_active = false;
 flash_alpha      = 0;
+bg_sky_r = 135; bg_sky_g = 206; bg_sky_b = 250;
+bg_target_sky_r = 135; bg_target_sky_g = 206; bg_target_sky_b = 250;
+bg_lerp_speed = 0.02;
 
 // ===================================================================
 // FASE 3 CONFIG
@@ -132,13 +135,10 @@ overload_ring_count = 0;
 overload_ring_timer = 0;
 
 // ===================================================================
-// RESPAWN CO-OP
+// RESPAWN CO-OP & UTILS
 // ===================================================================
 death_timer        = -1;
 depth              = -9999;
-bg_sky_r = 135; bg_sky_g = 206; bg_sky_b = 250;
-bg_target_sky_r = bg_sky_r; bg_target_sky_g = bg_sky_g; bg_target_sky_b = bg_sky_b;
-bg_lerp_speed = 0.02;
 p1_respawn_timer   = -1;
 p2_respawn_timer   = -1;
 respawn_delay_time = 180;
@@ -149,6 +149,12 @@ for (var i = 0; i < instance_number(obj_player); i++) {
     if (p_inst.p_id == 0) real_p1 = p_inst;
     if (p_inst.p_id == 1) real_p2 = p_inst;
 }
+
+// FIX TYPO DI SINI JIRR (Menggunakan bossX dan bossY bawaan asli kamu):
+l_turret_x = bossX - 185; 
+r_turret_x = bossX + 185;
+turret_base_y = bossY + 20;
+
 turret_hitbox_w = 150;
 turret_hitbox_h = 110;
 magnet_progress    = 0;
@@ -190,7 +196,10 @@ scatter_bullets    = ds_list_create();
 mortar_timer       = 0;
 
 // ===================================================================
-// SCREENSHAKE SYSTEM TERPUSAT (FIX KORREKSI CLAUDE)
+// SCREENSHAKE & INTERAL CONFIG AUDIO MANAGER
 // ===================================================================
 cam_shake_amount = 0;
-cam_shake_decay  = 0.92; // Sedikit dinaikkan agar durasi getar lebih halus proporsional
+cam_shake_decay  = 0.92; 
+
+current_bgm = sound_bgm_boss_phase1;
+audio_play_sound(current_bgm, 1, true);

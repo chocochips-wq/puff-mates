@@ -65,12 +65,18 @@ if (bullet_type == "giga_reflected") {
     var boss = instance_find(obj_fortress_boss, 0);
     if (boss != noone) {
         var dist_core = point_distance(x, y, boss.x, boss.y + 160);
+        
         if (dist_core < 95) {
             if (variable_instance_exists(boss, "core_main_hp")) {
                 // PERBAIKAN: Dikurangi 25 HP agar membutuhkan total 4 hantaman roket baru bos kalah
                 boss.core_main_hp -= 100; 
                 boss.hit_flash = 25;
-                audio_play_sound(sound_lompat, 1, false); // SFX hantaman keras balik
+                
+                // INTEGRASI AUDIO: Ledakan masif mengenai core & matikan sound snowball/raungan bos
+                // BUGFIX: sebelumnya audio_stop_sound(sound_laser) — sound_laser direservasi
+                // untuk laser asli (obj_laser_fase3), serangan ini pakai sound_snowball
+                audio_stop_sound(sound_snowball); 
+                audio_play_sound(sound_explosion_giga, 20, false); 
                 
                 // Efek Getar Ledakan Lebay pada bodi bos
                 boss.x += irandom_range(-10, 10);
@@ -212,7 +218,7 @@ else if (status == 3) {
             if (can_damage_boss) {
                 boss.core_top_hp -= 1;
                 boss.hit_flash = 20;
-                audio_play_sound(sound_lompat, 1, false);
+                audio_play_sound(sound_boss_hit, 8, false); // INTEGRASI AUDIO: Hantaman metal
                 if(boss.core_top_hp <= 0) boss.top_destroyed = true;
             }
             instance_destroy(); exit;
@@ -223,7 +229,7 @@ else if (status == 3) {
             if (can_damage_boss) {
                 boss.core_bottom_hp -= 1;
                 boss.hit_flash = 20;
-                audio_play_sound(sound_lompat, 1, false);
+                audio_play_sound(sound_boss_hit, 8, false); // INTEGRASI AUDIO: Hantaman metal
                 if(boss.core_bottom_hp <= 0) boss.bottom_destroyed = true;
             }
             instance_destroy(); exit;
@@ -236,7 +242,7 @@ else if (status == 3) {
                 if (can_damage_boss) {
                     boss.core_main_hp -= 1;
                     boss.hp -= 1; boss.hit_flash = 25;
-                    audio_play_sound(sound_lompat, 1, false);
+                    audio_play_sound(sound_boss_hit, 10, false); // INTEGRASI AUDIO: Hantaman metal bodi utama
                     if (boss.core_main_hp <= 0) boss.hp = 0;
                 }
                 instance_destroy();

@@ -12,3 +12,8 @@ target_stop_angle = 270;
 // Variabel animasi untuk efek kedip lantai merah
 flash_alpha = 0;
 flash_speed = 0.1;
+
+// BUGFIX AUDIO: obj_laser_fase3 sebelumnya tidak ada suara sama sekali.
+// was_lethal dipakai untuk mendeteksi rising-edge saat laser ini berubah
+// dari fase peringatan (kedip merah) jadi fase aktif menembak.
+was_lethal = false;
